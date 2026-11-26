@@ -144,7 +144,7 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
   text-shadow:0 2px 0 rgba(0,0,0,.22);
 }
 
-/* Phone Controller UI - Left / Right Only + Grab + Saved Gifts Wallet */
+/* Phone Controller UI - Left / Right Only + Grab + Saved Gift Wallet */
 #ctl{width:100%;max-width:520px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;gap:12px;padding:12px;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 #ctl.hide{display:none}
 .ch{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:800;font-size:1.15rem;padding:8px 16px;border-radius:999px;color:#fff;border:3px solid #fff;text-shadow:0 2px 0 rgba(0,0,0,.25)}
@@ -194,7 +194,7 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
 #drop.on{transform:translateY(5px);box-shadow:0 3px 0 rgba(0,0,0,.35)}
 #drop.busy{background:radial-gradient(circle at 35% 30%,#b6ff8a,#6fd23c 60%,#2b7a14);color:#fff}
 
-/* Saved Vouchers & Gifts Wallet for Cashier */
+/* Saved Gift Wallet for Cashier (Single Latest Won Gift) */
 .wallet{
   background:rgba(35,20,82,.85);
   border:3px solid #ff7ab8;
@@ -210,7 +210,7 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
   margin-bottom:8px;
 }
 .wallet-hd b{font-size:1.05rem;color:#ff9ac8}
-.wallet-list{display:flex;flex-direction:column;gap:8px;max-height:190px;overflow-y:auto}
+.wallet-list{display:flex;flex-direction:column;gap:8px}
 .wallet-empty{text-align:center;color:var(--muted);font-size:.9rem;padding:6px 0}
 .gift-card{
   display:flex;
@@ -299,7 +299,7 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
 <p class="help" id="helpTxt">Align carefully — the motorized claw has real sway, subtle gear vibration &amp; slip challenge on the way to your basket!</p>
 </div>
 
-<!-- Phone Controller Interface (Left / Right Only + Grab + Saved Gifts Wallet) -->
+<!-- Phone Controller Interface (Left / Right Only + Grab + Saved Gift Wallet) -->
 <div id="ctl" class="hide">
   <div class="ch"><b id="cwho">Player 1</b><span id="cst">Connecting…</span></div>
   <div class="cs solo" id="csBox">
@@ -332,7 +332,7 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
 
   <div class="wallet" id="walletBox">
     <div class="wallet-hd">
-      <b>🎁 Saved Gifts &amp; Vouchers (Cashier)</b>
+      <b>🎁 Won Gift (Cashier)</b>
     </div>
     <div class="wallet-list" id="walletList"></div>
   </div>
@@ -342,7 +342,6 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 (function(){
-// Matches the coffee sticker file inside your kynd_game folder
 var CUP_STICKER_SRC='kynd-sticker.png?v=2';
 
 var cupLoaded=false;
@@ -388,9 +387,9 @@ var balls=[],claws=[],state,timeLeft,overCountdown=0,wonPrize='',resultSeq=0,las
 var twoPlayerMode=false;
 var lobbyEpoch=0;
 var fx=[],popShards=[],ac=null,glow={a:0,b:0};
-var popAnim=null; // Center-screen ball boom animation state before card appears
-var GAME_SECONDS=20; // 20 seconds round
-var POST_GAME_WAIT=10; // 10 seconds before returning to QR lobby
+var popAnim=null;
+var GAME_SECONDS=20;
+var POST_GAME_WAIT=10;
 
 /* WebRTC PeerJS for mobile phone controller */
 var peerHost=null,peerConns={1:null,2:null},peerState={1:{dx:0,g:0,on:false,epoch:0},2:{dx:0,g:0,on:false,epoch:0}};
@@ -605,7 +604,6 @@ function drawCenterBoom(dt){
     ctx.save();ctx.fillStyle='rgba(255,255,255,.85)';
     ctx.beginPath();ctx.ellipse(cx-rad*0.38,cy-rad*0.42,rad*0.28,rad*0.16,-0.7,0,Math.PI*2);ctx.fill();ctx.restore();
 
-    /* Cute pop-top cap in the center */
     var cg=ctx.createLinearGradient(cx-10,0,cx+10,0);
     cg.addColorStop(0,'#8a5a10');cg.addColorStop(0.5,'#ffe38a');cg.addColorStop(1,'#a8741a');
     ctx.fillStyle=cg;rrect(cx-10,cy-rad-7,20,13,4);ctx.fill();
@@ -1183,7 +1181,6 @@ function rod(x1,y1,x2,y2,w){
 }
 function drawClaw(c,n){
   if(n===1 && !twoPlayerMode) return;
-  /* Gentle vibration on the lower claw holder/pincer assembly only */
   var motorJitterX=Math.sin(c.vibPhase)*1.35 + Math.sin(c.vibPhase*2.37)*0.65;
   var motorJitterY=Math.cos(c.vibPhase*1.85)*0.9 + Math.sin(c.vibPhase*3.1)*0.45;
   var vibX=calm?0:motorJitterX*c.vibAmt + Math.sin(c.swayAngle)*16;
@@ -1192,7 +1189,6 @@ function drawClaw(c,n){
   var anchorX=c.x, anchorY=c.y;
   var x=c.x+vibX, y=c.y+vibY, P=c.pal, i, op=c.open;
 
-  /* Upper rail trolley and straight wire stay steady on anchorX / anchorY */
   rrect(anchorX-24,RAIL-20,48,26,6);ctx.fillStyle=metal(anchorX-24,anchorX+24);ctx.fill();ctx.strokeStyle='#2b2f38';ctx.lineWidth=2;ctx.stroke();
   ctx.font='800 14px "Baloo 2",sans-serif';ctx.textAlign='center';ctx.fillStyle=P.lo;ctx.fillText('P'+(n+1),anchorX,RAIL-3);
   [-14,14].forEach(function(o){
@@ -1213,7 +1209,6 @@ function drawClaw(c,n){
     ctx.fillStyle='rgba(255,255,255,.65)';ctx.beginPath();ctx.ellipse(anchorX-rx*0.38,by-bh*0.12,rx*0.2,bh*0.18,0,0,Math.PI*2);ctx.fill();
   }
 
-  /* Lower claw holder / pincer assembly (silver cap, rods, joints, and tips) */
   ctx.save();
   ctx.translate(x,y-25);
   ctx.rotate(calm?0:(c.swayAngle*1.05 + Math.sin(c.vibPhase*1.15)*0.025*c.vibAmt));
@@ -1432,7 +1427,7 @@ function initHostPeer(){
   }catch(e){}
 }
 
-/* Mobile Phone Controller Logic - Left / Right Only + Grab + Saved Gifts Wallet */
+/* Mobile Phone Controller Logic - Left / Right Only + Grab + Single Won Gift Wallet */
 function startCtl(n,targetRoom){
   document.getElementById('game').classList.add('hide');
   var el=document.getElementById('ctl');el.classList.remove('hide');el.classList.add('p'+n);document.body.classList.add('isctl');
@@ -1444,60 +1439,64 @@ function startCtl(n,targetRoom){
   function loadGifts(){
     try{
       var raw=localStorage.getItem(WALLET_KEY);
-      return raw ? JSON.parse(raw) : [];
+      var parsed=raw ? JSON.parse(raw) : [];
+      if(!Array.isArray(parsed))return [];
+      /* Keep only the single latest won gift */
+      if(parsed.length>1){
+        parsed=[parsed[0]];
+        saveGifts(parsed);
+      }
+      return parsed;
     }catch(e){return []}
   }
   function saveGifts(items){
-    try{localStorage.setItem(WALLET_KEY,JSON.stringify(items))}catch(e){}
+    try{
+      var singleOnly=Array.isArray(items) && items.length ? [items[0]] : [];
+      localStorage.setItem(WALLET_KEY,JSON.stringify(singleOnly));
+    }catch(e){}
   }
   function renderWallet(){
     var listEl=document.getElementById('walletList');
     var items=loadGifts();
     if(!items.length){
-      listEl.innerHTML='<div class="wallet-empty">No vouchers or coffee saved yet. Win a prize and it stays here for the cashier!</div>';
+      listEl.innerHTML='<div class="wallet-empty">No gift won yet. Win a voucher or coffee and it will appear here for the cashier!</div>';
       return;
     }
     listEl.innerHTML='';
-    items.forEach(function(item){
-      var card=document.createElement('div');
-      card.className='gift-card'+(item.used?' used':'');
-      var info=document.createElement('div');
-      info.className='gift-info';
-      var badgeHtml=(cupLoaded && item.name.indexOf('Coffee')!==-1)
-        ? '<span class="sticker-wrap small"><img class="sticker-img" src="'+CUP_STICKER_SRC+'" alt="Coffee Sticker"></span>'
-        : '<span class="gift-em">'+prizeEmoji(item.name)+'</span>';
-      info.innerHTML=badgeHtml+'<div><div class="gift-name">'+item.name+'</div><div class="gift-time">Saved '+item.time+'</div></div>';
-      var btn=document.createElement('button');
-      btn.className='cashier-btn';
-      btn.textContent=item.used?'Used ✓':'Use at Cashier';
-      btn.addEventListener('click',function(){
-        var updated=loadGifts().map(function(row){
-          if(row.id===item.id)row.used=!row.used;
-          return row;
-        });
-        saveGifts(updated);
-        renderWallet();
-      });
-      card.appendChild(info);
-      card.appendChild(btn);
-      listEl.appendChild(card);
+    var item=items[0];
+    var card=document.createElement('div');
+    card.className='gift-card'+(item.used?' used':'');
+    var info=document.createElement('div');
+    info.className='gift-info';
+    var badgeHtml=(cupLoaded && item.name.indexOf('Coffee')!==-1)
+      ? '<span class="sticker-wrap small"><img class="sticker-img" src="'+CUP_STICKER_SRC+'" alt="Coffee Sticker"></span>'
+      : '<span class="gift-em">'+prizeEmoji(item.name)+'</span>';
+    info.innerHTML=badgeHtml+'<div><div class="gift-name">'+item.name+'</div><div class="gift-time">Won '+item.time+'</div></div>';
+    var btn=document.createElement('button');
+    btn.className='cashier-btn';
+    btn.textContent=item.used?'Used ✓':'Use at Cashier';
+    btn.addEventListener('click',function(){
+      saveGifts([{id:item.id,name:item.name,time:item.time,used:!item.used}]);
+      renderWallet();
     });
+    card.appendChild(info);
+    card.appendChild(btn);
+    listEl.appendChild(card);
   }
   function recordPrizeIfNew(gp){
     if(!gp || !gp.prize || gp.prize==='No Gift - Try Again')return;
     var seq=+gp.rseq||0;
     if(seq>0 && seq!==lastRecordedSeq){
       lastRecordedSeq=seq;
-      var items=loadGifts();
       var now=new Date();
       var timeStr=now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-      items.unshift({
+      /* Replace any previous gift so only the one gift you won is saved */
+      saveGifts([{
         id:seq+'-'+Date.now(),
         name:gp.prize,
         time:timeStr,
         used:false
-      });
-      saveGifts(items);
+      }]);
       renderWallet();
     }
   }
