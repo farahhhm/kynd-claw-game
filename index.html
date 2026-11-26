@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Claw Game – Christmas</title>
+<title>kynd – Claw Game</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
 <style>
@@ -16,6 +16,108 @@ body{background-color:var(--bg);background-image:radial-gradient(circle at 15% 1
 .local-warn code{background:rgba(0,0,0,.35);padding:1px 6px;border-radius:6px;color:#ffe066}
 
 body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;padding:0}
+
+/* Opening Green Splash Screen with Animated "kynd" */
+.splash-screen{
+  position:fixed;
+  inset:0;
+  z-index:999;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background:radial-gradient(circle at 50% 35%,#22784d 0%,#12462c 58%,#092416 100%);
+  transition:opacity .55s ease,transform .55s ease,visibility .55s ease;
+}
+.splash-screen.fade-out{
+  opacity:0;
+  transform:scale(1.05);
+  visibility:hidden;
+  pointer-events:none;
+}
+.splash-word{
+  position:relative;
+  display:inline-flex;
+  align-items:baseline;
+  gap:2px;
+  font-size:clamp(3.6rem,13vw,6.8rem);
+  font-weight:800;
+  line-height:1;
+  letter-spacing:.02em;
+  color:#ffffff;
+  -webkit-text-stroke:4px #ff4f9a;
+  paint-order:stroke fill;
+  text-shadow:0 7px 0 #b81c63,0 16px 34px rgba(0,0,0,.45);
+}
+.splash-letter{
+  display:inline-block;
+  opacity:0;
+  transform:translateY(28px) scale(.55) rotate(-8deg);
+  animation:splashLetterIn .58s cubic-bezier(.22,1.35,.36,1) forwards, splashFloat 2.4s ease-in-out .75s infinite;
+}
+.splash-letter:nth-child(1){animation-delay:.08s,.75s}
+.splash-letter:nth-child(2){animation-delay:.18s,.88s}
+.splash-letter:nth-child(3){animation-delay:.28s,1.01s}
+.splash-letter:nth-child(4){animation-delay:.38s,1.14s}
+.splash-sparkle{
+  position:absolute;
+  top:-14px;
+  right:-18px;
+  font-size:1.75rem;
+  opacity:0;
+  animation:sparklePop .7s ease .5s forwards, emojiFloat 1.8s ease-in-out 1.2s infinite;
+}
+@keyframes splashLetterIn{
+  0%{opacity:0;transform:translateY(28px) scale(.55) rotate(-8deg)}
+  68%{opacity:1;transform:translateY(-6px) scale(1.08) rotate(3deg)}
+  100%{opacity:1;transform:translateY(0) scale(1) rotate(0deg)}
+}
+@keyframes splashFloat{
+  0%,100%{transform:translateY(0) scale(1)}
+  50%{transform:translateY(-7px) scale(1.03)}
+}
+@keyframes sparklePop{
+  0%{opacity:0;transform:scale(.2) rotate(-25deg)}
+  70%{opacity:1;transform:scale(1.2) rotate(10deg)}
+  100%{opacity:1;transform:scale(1) rotate(0deg)}
+}
+
+/* Top-Left Cute Brand Logo ("kynd" white fill + pink outer stroke) */
+.brand-logo{
+  position:fixed;
+  top:10px;
+  left:14px;
+  z-index:40;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:2px 10px 2px 6px;
+  border-radius:999px;
+  background:rgba(12,36,24,.45);
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+  pointer-events:none;
+  user-select:none;
+}
+.brand-logo-text{
+  font-size:1.55rem;
+  font-weight:800;
+  line-height:1.05;
+  letter-spacing:.02em;
+  color:#ffffff;
+  -webkit-text-stroke:3px #ff4f9a;
+  paint-order:stroke fill;
+  text-shadow:0 3px 0 #a31858,0 6px 14px rgba(0,0,0,.35);
+}
+.brand-logo-dot{
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:#ff4f9a;
+  border:2px solid #ffffff;
+  box-shadow:0 2px 0 #a31858;
+  transform:translateY(-5px);
+}
 
 /* Fit entire desktop game view into 100dvh without vertical scrolling */
 #game{width:min(100%,calc((100dvh - 125px) * 1.48),760px);max-height:100%;display:flex;flex-direction:column;align-items:center;gap:6px}
@@ -255,6 +357,23 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
 </style>
 </head>
 <body>
+<!-- Opening Green Splash Screen -->
+<div class="splash-screen hide" id="splash">
+  <div class="splash-word" aria-label="kynd">
+    <span class="splash-letter">k</span>
+    <span class="splash-letter">y</span>
+    <span class="splash-letter">n</span>
+    <span class="splash-letter">d</span>
+    <span class="splash-sparkle">✨</span>
+  </div>
+</div>
+
+<!-- Top-Left Cute Brand Logo -->
+<div class="brand-logo" aria-label="kynd">
+  <span class="brand-logo-text">kynd</span>
+  <span class="brand-logo-dot"></span>
+</div>
+
 <div id="game">
 <div class="local-warn hide" id="localWarn">
   <b>Local File Detected:</b> Your phone cannot open <code>file:///</code> links from your PC. Serve this folder over HTTP (e.g. <code>python -m http.server 8000</code> and open <code>http://YOUR-PC-IP:8000/index.html</code>) or host it online so scanning the QR opens the controller.
@@ -399,9 +518,6 @@ var roomId='claw-'+Math.random().toString(36).slice(2,8);
 /* Only vouchers keep their emoji */
 function isVoucherPrize(prize){
   return !!(prize && prize.indexOf('Voucher')!==-1);
-}
-function prizeEmoji(prize){
-  return isVoucherPrize(prize)?'🎟️':'';
 }
 
 function initAudio(){
@@ -1725,6 +1841,14 @@ if(window.claude&&claude.use)claude.use('room').then(function(r){room=r}).catch(
 if(mode){
   startCtl(+mode[1],mode[2]||null);
 }else{
+  var splashEl=document.getElementById('splash');
+  if(splashEl){
+    splashEl.classList.remove('hide');
+    setTimeout(function(){
+      splashEl.classList.add('fade-out');
+      setTimeout(function(){splashEl.classList.add('hide')},600);
+    },1850);
+  }
   if(location.protocol==='file:'){
     var lw=document.getElementById('localWarn');
     if(lw)lw.classList.remove('hide');
