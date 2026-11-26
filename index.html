@@ -389,8 +389,13 @@ var lobbyEpoch=0;
 var fx=[],popShards=[],ac=null,glow={a:0,b:0};
 var popAnim=null;
 var pendingBasketBall=null;
-var GAME_SECONDS=20;
+var GAME_SECONDS_1P=20;
+var GAME_SECONDS_2P=60;
 var POST_GAME_WAIT=10;
+
+function getRoundSeconds(){
+  return twoPlayerMode ? GAME_SECONDS_2P : GAME_SECONDS_1P;
+}
 
 /* WebRTC PeerJS for mobile phone controller */
 var peerHost=null,peerConns={1:null,2:null},peerState={1:{dx:0,g:0,on:false,epoch:0},2:{dx:0,g:0,on:false,epoch:0}};
@@ -459,8 +464,8 @@ function spawnCenterBoom(startX,startY,col,prizeText){
     col:col,
     prize:prizeText,
     age:0,
-    popDuration:1.25,
-    burstDelay:0.55,
+    popDuration:1.1,
+    burstDelay:0.48,
     popped:false,
     cardShown:false
   };
@@ -476,21 +481,21 @@ function burstCenterBall(p){
   var cx=W/2, cy=H/2 - 10;
   for(var i=0;i<22;i++){
     var ang=(Math.PI*2/22)*i + Math.random()*0.2;
-    var spd=3.2+Math.random()*4.8;
+    var spd=3.8+Math.random()*5.2;
     popShards.push({
       x:cx,y:cy,
       vx:Math.cos(ang)*spd,
-      vy:Math.sin(ang)*spd-2.4,
+      vy:Math.sin(ang)*spd-2.6,
       rot:Math.random()*Math.PI*2,
-      vr:(Math.random()-0.5)*0.25,
-      life:78,
+      vr:(Math.random()-0.5)*0.28,
+      life:75,
       c:i%3===0?'#ffe066':p.col,
       r:14+Math.random()*9
     });
   }
   for(var j=0;j<28;j++){
-    var a=Math.random()*Math.PI*2,sp=2.2+Math.random()*5.2;
-    fx.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2.2,life:78,c:COLORS[j%2]});
+    var a=Math.random()*Math.PI*2,sp=2.6+Math.random()*5.6;
+    fx.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2.4,life:75,c:COLORS[j%2]});
   }
 }
 function showFinalPrizeCard(prizeText){
@@ -547,12 +552,12 @@ function celebrate(side,landedBall){
   glow[side]=1;
   var col=side==='a'?'#ff4f9a':'#3fa322',cx=side==='a'?WL/2:(WR+W)/2;
   for(var i=0;i<28;i++){
-    var a=Math.random()*Math.PI*2,sp=2+Math.random()*5;
-    fx.push({x:cx,y:RIM,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-4,life:60,c:i%2?col:COLORS[i%2]});
+    var a=Math.random()*Math.PI*2,sp=2.4+Math.random()*5.4;
+    fx.push({x:cx,y:RIM,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-4.2,life:58,c:i%2?col:COLORS[i%2]});
   }
-  fx.push({x:cx,y:RIM-30,vx:0,vy:-1.2,life:70,c:col,t:'+1!'});
+  fx.push({x:cx,y:RIM-30,vx:0,vy:-1.4,life:65,c:col,t:'+1!'});
   var el=document.getElementById(side==='a'?'ca':'cb');
-  if(el.animate&&!matchMedia('(prefers-reduced-motion:reduce)').matches)el.animate([{transform:'scale(1.6)'},{transform:'scale(1)'}],{duration:350});
+  if(el.animate&&!matchMedia('(prefers-reduced-motion:reduce)').matches)el.animate([{transform:'scale(1.6)'},{transform:'scale(1)'}],{duration:320});
   if(!twoPlayerMode && side==='a' && state==='play' && !popAnim && !pendingBasketBall){
     pendingBasketBall={
       ball:landedBall||null,
@@ -573,7 +578,7 @@ function updatePendingBasketPop(dt){
 
   if(insideBasket || settled){
     pendingBasketBall.settledTimer+=dt;
-    if(pendingBasketBall.settledTimer >= 0.45){
+    if(pendingBasketBall.settledTimer >= 0.35){
       var bx=b ? b.x : WL/2;
       var by=b ? b.y : RIM+45;
       var bcol=b ? b.c : '#ff4f9a';
@@ -653,7 +658,7 @@ function drawCenterBoom(dt){
 function drawFx(){
   popShards=popShards.filter(function(s){return s.life>0});
   popShards.forEach(function(s){
-    s.x+=s.vx;s.y+=s.vy;s.vy+=0.2;s.rot+=s.vr;s.life--;
+    s.x+=s.vx;s.y+=s.vy;s.vy+=0.22;s.rot+=s.vr;s.life--;
     ctx.save();
     ctx.globalAlpha=Math.min(1,s.life/28);
     ctx.translate(s.x,s.y);
@@ -671,7 +676,7 @@ function drawFx(){
 
   fx=fx.filter(function(p){return p.life>0});
   fx.forEach(function(p){
-    p.x+=p.vx;p.y+=p.vy;if(!p.t)p.vy+=0.2;p.life--;
+    p.x+=p.vx;p.y+=p.vy;if(!p.t)p.vy+=0.22;p.life--;
     ctx.globalAlpha=Math.min(1,p.life/35);
     if(p.t){ctx.fillStyle=p.c;ctx.font='800 34px "Baloo 2",sans-serif';ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='#231452';ctx.strokeText(p.t,p.x,p.y);ctx.fillText(p.t,p.x,p.y)}
     else{ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,9,9)}
@@ -721,7 +726,7 @@ function reset(){
       rightTwist:0
     };
   });
-  timeLeft=GAME_SECONDS;
+  timeLeft=getRoundSeconds();
   overCountdown=0;
   wonPrize='';
   popAnim=null;
@@ -748,7 +753,7 @@ function startGrabSequence(c){
   if(state!=='play' || popAnim || pendingBasketBall)return;
   if(c.phase!=='idle' || c.held)return;
   c.phase='windupDrop';
-  c.pauseTimer=0.25;
+  c.pauseTimer=0.18;
   c.open=true;
   c.vibAmt=0.3;
   c.swayVel+=(Math.random()<0.5?-1:1)*0.03;
@@ -769,11 +774,11 @@ function attemptPickAtCurrentPos(c){
       c.held=null;
       c.open=false;
       c.phase='windupLift';
-      c.pauseTimer=0.22;
+      c.pauseTimer=0.16;
       c.vibAmt=0.35;
       c.swayVel+=(best.x>c.x?-1:1)*0.06;
       sfx('slip');
-      setTimeout(function(){if(!c.held)c.open=true},280);
+      setTimeout(function(){if(!c.held)c.open=true},240);
       return;
     }
     c.held=best;
@@ -783,7 +788,7 @@ function attemptPickAtCurrentPos(c){
     c.gripOffset=offset;
     c.open=false;
     c.phase='windupLift';
-    c.pauseTimer=0.26;
+    c.pauseTimer=0.18;
     c.vibAmt=0.32;
     c.swayVel+=(Math.random()<0.5?-1:1)*0.04;
     sfx('grab');
@@ -791,15 +796,15 @@ function attemptPickAtCurrentPos(c){
     sfx('miss');
     c.open=false;
     c.phase='windupLift';
-    c.pauseTimer=0.22;
-    setTimeout(function(){if(!c.held)c.open=true},220);
+    c.pauseTimer=0.16;
+    setTimeout(function(){if(!c.held)c.open=true},180);
   }
 }
 function slipHeldBall(c){
   if(!c.held)return;
   var b=c.held;
   b.held=false;
-  b.vy=1.0;
+  b.vy=1.2;
   c.held=null;
   c.open=true;
   c.phase='idle';
@@ -881,17 +886,19 @@ function returnToQrLobby(){
 function startGame(){
   initAudio();
   if(state==='over')reset();
+  else timeLeft=getRoundSeconds();
   state='play';
   overCountdown=0;
   wonPrize='';
   popAnim=null;
   pendingBasketBall=null;
+  updateHud();
   overlay(false);
 }
 function physics(){
   balls.forEach(function(o){
     if(o.held){o.in=null;return}
-    o.vy+=0.48;o.y+=o.vy;
+    o.vy+=0.58;o.y+=o.vy;
     if(o.y>FLOOR-R){o.y=FLOOR-R;o.vy=0}
     if(o.x<R)o.x=R;if(o.x>W-R)o.x=W-R;
     if(o.in==='a'){
@@ -939,7 +946,7 @@ function physics(){
   }
 }
 
-/* Slower grabber motion with pendulum swing & straight normal basket drop-off */
+/* Slightly quicker grabber motion with pendulum swing & straight normal basket drop-off */
 function move(dt){
   var activeClaws=twoPlayerMode?claws:[claws[0]];
   activeClaws.forEach(function(c){
@@ -958,7 +965,7 @@ function move(dt){
       }
     }else if(c.phase==='descending'){
       isMoving=true;
-      c.y+=1.05;
+      c.y+=1.45;
       c.swayVel+=Math.sin(c.vibPhase*1.3)*0.006;
       var hitBall=false;
       balls.forEach(function(o){
@@ -986,7 +993,7 @@ function move(dt){
         return;
       }
       if(c.y > topY + 2){
-        c.y=Math.max(topY, c.y - 1.0);
+        c.y=Math.max(topY, c.y - 1.38);
         c.swayVel+=Math.sin(c.vibPhase*1.2)*0.007;
       }else{
         c.y=topY;
@@ -1007,7 +1014,7 @@ function move(dt){
       var basketX=c.idx===0 ? WL/2 : (WR+W)/2;
       var diffX=basketX - c.x;
       if(Math.abs(diffX) > 3){
-        var stepX=Math.sign(diffX)*Math.min(Math.abs(diffX), 1.05);
+        var stepX=Math.sign(diffX)*Math.min(Math.abs(diffX), 1.45);
         c.x+=stepX;
         c.swayVel-=stepX*0.009;
       }else{
@@ -1016,7 +1023,7 @@ function move(dt){
           c.held.x=c.x;
           c.held.y=c.y+28;
           c.held.held=false;
-          c.held.vy=1.1;
+          c.held.vy=1.3;
           c.held=null;
         }
         c.open=true;
@@ -1027,8 +1034,8 @@ function move(dt){
     }else{
       c.y=topY;
       var dirX=Math.max(-1,Math.min(1,c.dx));
-      var targetVel=dirX*1.05;
-      var accel=dirX!==0 ? 7.5 : 10;
+      var targetVel=dirX*1.42;
+      var accel=dirX!==0 ? 9.5 : 12;
       c.velX+=(targetVel - c.velX)*Math.min(1, accel*dt);
       if(Math.abs(c.velX)<0.02 && dirX===0)c.velX=0;
       isMoving=Math.abs(c.velX)>0.05;
