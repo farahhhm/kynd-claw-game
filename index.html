@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>kynd – Claw Game</title>
+<title>Claw Game</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
 <style>
@@ -16,148 +16,6 @@ body{background-color:var(--bg);background-image:radial-gradient(circle at 15% 1
 .local-warn code{background:rgba(0,0,0,.35);padding:1px 6px;border-radius:6px;color:#ffe066}
 
 body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;padding:0}
-
-/* Netflix-Style Opening Green Splash Screen with "kynd" Sticker */
-.splash-screen{
-  position:fixed;
-  inset:0;
-  z-index:999;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:radial-gradient(circle at 50% 45%,#1d6e46 0%,#0f3d26 62%,#071d12 100%);
-  overflow:hidden;
-  transition:opacity .55s cubic-bezier(.22,1,.36,1),visibility .55s ease;
-}
-.splash-screen.fade-out{
-  opacity:0;
-  visibility:hidden;
-  pointer-events:none;
-}
-.splash-stage{
-  position:relative;
-  width:min(76vw,480px);
-  aspect-ratio:2.45 / 1;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  opacity:0;
-  transform:scale(.42);
-  filter:drop-shadow(0 14px 36px rgba(0,0,0,.55));
-}
-.splash-screen.active .splash-stage{
-  animation:netflixZoomIn 1.95s cubic-bezier(.16,1,.3,1) forwards;
-}
-.splash-logo-canvas{
-  width:100%;
-  height:100%;
-  display:block;
-}
-.splash-flare{
-  position:absolute;
-  top:-30%;
-  left:-55%;
-  width:36%;
-  height:160%;
-  background:linear-gradient(
-    90deg,
-    rgba(255,255,255,0) 0%,
-    rgba(255,224,238,.25) 35%,
-    rgba(255,255,255,.92) 50%,
-    rgba(255,140,196,.35) 65%,
-    rgba(255,255,255,0) 100%
-  );
-  transform:skewX(-24deg);
-  mix-blend-mode:screen;
-  pointer-events:none;
-  opacity:0;
-}
-.splash-screen.active .splash-flare{
-  animation:netflixFlareSweep 1.15s cubic-bezier(.2,0,.2,1) .42s forwards;
-}
-.splash-pulse-ring{
-  position:absolute;
-  inset:-14px;
-  border-radius:36px;
-  border:3px solid rgba(255,140,196,.75);
-  box-shadow:0 0 28px rgba(255,79,154,.55),inset 0 0 22px rgba(255,255,255,.25);
-  opacity:0;
-  pointer-events:none;
-}
-.splash-screen.active .splash-pulse-ring{
-  animation:netflixPulse 1.1s ease-out .55s forwards;
-}
-
-@keyframes netflixZoomIn{
-  0%{
-    opacity:0;
-    transform:scale(.35);
-    letter-spacing:-.04em;
-  }
-  22%{
-    opacity:1;
-    transform:scale(.76);
-  }
-  68%{
-    opacity:1;
-    transform:scale(1.16);
-  }
-  86%{
-    opacity:1;
-    transform:scale(1.03);
-  }
-  100%{
-    opacity:1;
-    transform:scale(1.06);
-  }
-}
-@keyframes netflixFlareSweep{
-  0%{
-    opacity:0;
-    left:-55%;
-  }
-  15%{
-    opacity:1;
-  }
-  85%{
-    opacity:1;
-  }
-  100%{
-    opacity:0;
-    left:135%;
-  }
-}
-@keyframes netflixPulse{
-  0%{
-    opacity:.85;
-    transform:scale(.96);
-  }
-  100%{
-    opacity:0;
-    transform:scale(1.24);
-  }
-}
-
-/* Top-Left Brand Logo ("kynd" sticker from image) */
-.brand-logo{
-  position:fixed;
-  top:10px;
-  left:14px;
-  z-index:40;
-  width:118px;
-  height:48px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  filter:drop-shadow(0 4px 10px rgba(0,0,0,.42));
-  pointer-events:none;
-  user-select:none;
-}
-.brand-logo-canvas{
-  width:100%;
-  height:100%;
-  display:block;
-}
 
 /* Fit entire desktop game view into 100dvh without vertical scrolling */
 #game{width:min(100%,calc((100dvh - 125px) * 1.48),760px);max-height:100%;display:flex;flex-direction:column;align-items:center;gap:6px}
@@ -397,20 +255,6 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
 </style>
 </head>
 <body>
-<!-- Netflix-Style Opening Green Splash Screen -->
-<div class="splash-screen hide" id="splash">
-  <div class="splash-stage" id="splashStage">
-    <canvas class="splash-logo-canvas" id="splashLogoCv" width="900" height="368" aria-label="kynd"></canvas>
-    <div class="splash-flare"></div>
-    <div class="splash-pulse-ring"></div>
-  </div>
-</div>
-
-<!-- Top-Left Brand Logo ("kynd" sticker from image) -->
-<div class="brand-logo" aria-label="kynd">
-  <canvas class="brand-logo-canvas" id="topLogoCv" width="280" height="114"></canvas>
-</div>
-
 <div id="game">
 <div class="local-warn hide" id="localWarn">
   <b>Local File Detected:</b> Your phone cannot open <code>file:///</code> links from your PC. Serve this folder over HTTP (e.g. <code>python -m http.server 8000</code> and open <code>http://YOUR-PC-IP:8000/index.html</code>) or host it online so scanning the QR opens the controller.
@@ -498,61 +342,7 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 (function(){
-var KYND_STICKER_SRC='image_e37ce6.jpg';
 var CUP_STICKER_SRC='kynd-sticker.png?v=2';
-
-var kyndImg=new Image();
-var kyndLoaded=false;
-function renderKyndStickerCanvases(){
-  if(!kyndLoaded)return;
-  var targets=['splashLogoCv','topLogoCv'];
-  targets.forEach(function(id){
-    var c=document.getElementById(id);
-    if(!c)return;
-    var g=c.getContext('2d');
-    g.clearRect(0,0,c.width,c.height);
-
-    /* Crop tightly around the white/pink kynd sticker from the uploaded artwork */
-    var sx=kyndImg.naturalWidth*0.02;
-    var sy=kyndImg.naturalHeight*0.03;
-    var sw=kyndImg.naturalWidth*0.95;
-    var sh=kyndImg.naturalHeight*0.93;
-
-    /* Draw onto offscreen canvas to strip any background/checkerboard outside the pink/white sticker */
-    var off=document.createElement('canvas');
-    off.width=sw;
-    off.height=sh;
-    var og=off.getContext('2d');
-    og.drawImage(kyndImg,sx,sy,sw,sh,0,0,sw,sh);
-
-    try{
-      var imgData=og.getImageData(0,0,sw,sh);
-      var d=imgData.data;
-      for(var i=0;i<d.length;i+=4){
-        var r=d[i],grn=d[i+1],b=d[i+2];
-        var isPink=(r > 185 && grn < 175 && b > 125 && (r - grn) > 45);
-        var isWhite=(r > 225 && grn > 225 && b > 225);
-        if(!isPink && !isWhite){
-          d[i+3]=0;
-        }
-      }
-      og.putImageData(imgData,0,0);
-    }catch(e){}
-
-    var pad=14;
-    var scale=Math.min((c.width-pad*2)/sw,(c.height-pad*2)/sh);
-    var dw=sw*scale;
-    var dh=sh*scale;
-    var dx=(c.width-dw)/2;
-    var dy=(c.height-dh)/2;
-    g.drawImage(off,dx,dy,dw,dh);
-  });
-}
-kyndImg.onload=function(){
-  kyndLoaded=true;
-  renderKyndStickerCanvases();
-};
-kyndImg.src=KYND_STICKER_SRC;
 
 var cupLoaded=false;
 var cupProbe=new Image();
@@ -620,14 +410,6 @@ function initAudio(){
       ac.resume().catch(function(){});
     }
   }catch(e){ac=null}
-}
-function playNetflixChime(){
-  initAudio();
-  if(!ac)return;
-  tone(130.81,0.75,'triangle',0.16,130.81,0);
-  tone(196.00,0.70,'triangle',0.14,196.00,0.12);
-  tone(261.63,0.85,'sine',0.15,261.63,0.24);
-  tone(392.00,0.95,'sine',0.12,523.25,0.42);
 }
 function tone(f,d,type,vol,to,delay){
   initAudio();
@@ -1940,20 +1722,6 @@ if(window.claude&&claude.use)claude.use('room').then(function(r){room=r}).catch(
 if(mode){
   startCtl(+mode[1],mode[2]||null);
 }else{
-  var splashEl=document.getElementById('splash');
-  if(splashEl){
-    splashEl.classList.remove('hide');
-    requestAnimationFrame(function(){
-      requestAnimationFrame(function(){
-        splashEl.classList.add('active');
-        playNetflixChime();
-      });
-    });
-    setTimeout(function(){
-      splashEl.classList.add('fade-out');
-      setTimeout(function(){splashEl.classList.add('hide')},600);
-    },2250);
-  }
   if(location.protocol==='file:'){
     var lw=document.getElementById('localWarn');
     if(lw)lw.classList.remove('hide');
