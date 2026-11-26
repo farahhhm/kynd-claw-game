@@ -44,11 +44,10 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
 .splash-screen.active .splash-logo-wrap{
   animation:kyndSmallToLargePop 1.65s cubic-bezier(.18,1.28,.32,1) forwards;
 }
-.kynd-svg{
+#splashLogoCv{
   width:100%;
   height:auto;
   display:block;
-  overflow:visible;
 }
 
 @keyframes kyndSmallToLargePop{
@@ -77,13 +76,19 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
 /* Top-Left Cute "kynd" Sticker Logo */
 .brand-logo{
   position:fixed;
-  top:12px;
+  top:10px;
   left:14px;
   z-index:40;
-  width:116px;
+  width:124px;
+  height:52px;
   filter:drop-shadow(0 4px 10px rgba(0,0,0,.4));
   pointer-events:none;
   user-select:none;
+}
+#topLogoCv{
+  width:100%;
+  height:100%;
+  display:block;
 }
 
 /* Fit entire desktop game view into 100dvh without vertical scrolling */
@@ -324,54 +329,16 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
 </style>
 </head>
 <body>
-<!-- Reusable Exact Chunky Rounded "kynd" Sticker Definition -->
-<svg width="0" height="0" style="position:absolute;visibility:hidden" aria-hidden="true">
-  <defs>
-    <g id="kynd-sticker-mark">
-      <!-- Outer Bubblegum-Pink Die-Cut Sticker Border -->
-      <g fill="none" stroke="#ff8ec7" stroke-width="58" stroke-linejoin="round" stroke-linecap="round">
-        <!-- k -->
-        <rect x="44" y="42" width="44" height="156" rx="14"/>
-        <path d="M84 128 L132 82 L156 104 L114 140 L160 192 L130 202 L84 150 Z"/>
-        <!-- y -->
-        <path d="M174 84 L214 84 L234 152 L254 84 L294 84 L256 196 C246 226 226 238 196 238 L178 238 L178 206 L194 206 C206 206 212 200 216 188 Z"/>
-        <!-- n -->
-        <path d="M312 84 L350 84 L350 98 C362 84 378 78 396 78 C426 78 446 98 446 132 L446 198 L404 198 L404 138 C404 122 394 112 380 112 C364 112 354 122 354 138 L354 198 L312 198 Z"/>
-        <!-- d -->
-        <path d="M558 42 L600 42 L600 198 L560 198 L560 184 C548 196 534 202 516 202 C482 202 458 176 458 140 C458 104 482 78 516 78 C534 78 548 84 558 96 Z"/>
-      </g>
-      <!-- Pink Counter Fill Inside "d" -->
-      <circle cx="530" cy="140" r="22" fill="#ff8ec7"/>
-      <!-- Crisp White Chunky Rounded Lettering -->
-      <g fill="#ffffff">
-        <!-- k -->
-        <rect x="44" y="42" width="44" height="156" rx="14"/>
-        <path d="M84 128 L132 82 C138 76 146 76 152 82 L162 92 C168 98 168 106 162 112 L124 144 L164 186 C170 192 166 200 158 200 L132 200 C124 200 118 196 112 190 L84 156 Z"/>
-        <!-- y -->
-        <path d="M170 94 C168 86 174 80 182 80 L206 80 C214 80 218 84 220 92 L235 148 L250 92 C252 84 256 80 264 80 L288 80 C296 80 302 86 300 94 L262 198 C252 226 232 240 200 240 L184 240 C176 240 170 234 170 226 L170 212 C170 204 176 198 184 198 L196 198 C206 198 212 194 216 184 Z"/>
-        <!-- n -->
-        <path d="M310 92 C310 84 316 78 324 78 L342 78 C350 78 354 84 354 92 L354 96 C364 82 378 76 396 76 C428 76 448 98 448 132 L448 186 C448 194 442 200 434 200 L414 200 C406 200 400 194 400 186 L400 138 C400 122 392 112 378 112 C364 112 356 122 356 138 L356 186 C356 194 350 200 342 200 L324 200 C316 200 310 194 310 186 Z"/>
-        <!-- d -->
-        <path fill-rule="evenodd" d="M556 54 C556 46 562 40 570 40 L588 40 C596 40 602 46 602 54 L602 186 C602 194 596 200 588 200 L570 200 C562 200 558 194 558 186 L558 184 C548 196 534 202 516 202 C480 202 456 176 456 140 C456 104 480 76 516 76 C534 76 548 82 556 94 Z M530 116 C516 116 506 126 506 140 C506 154 516 164 530 164 C544 164 554 154 554 140 C554 126 544 116 530 116 Z"/>
-      </g>
-    </g>
-  </defs>
-</svg>
-
 <!-- Green Opening Splash Screen (Pop From Small Word to Large Word) -->
 <div class="splash-screen hide" id="splash">
   <div class="splash-logo-wrap" aria-label="kynd">
-    <svg class="kynd-svg" viewBox="0 0 646 276" role="img" aria-label="kynd">
-      <use href="#kynd-sticker-mark"/>
-    </svg>
+    <canvas id="splashLogoCv" width="900" height="390"></canvas>
   </div>
 </div>
 
 <!-- Top-Left Cute Brand Logo ("kynd") -->
 <div class="brand-logo" aria-label="kynd">
-  <svg class="kynd-svg" viewBox="0 0 646 276" role="img" aria-label="kynd">
-    <use href="#kynd-sticker-mark"/>
-  </svg>
+  <canvas id="topLogoCv" width="372" height="156"></canvas>
 </div>
 
 <div id="game">
@@ -462,6 +429,132 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
 <script>
 (function(){
 var CUP_STICKER_SRC='kynd-sticker.png?v=2';
+
+function traceKyndPaths(g){
+  /* k */
+  g.beginPath();
+  g.roundRect(70,68,52,216,18);
+  g.moveTo(118,176);
+  g.lineTo(176,122);
+  g.quadraticCurveTo(188,112,200,124);
+  g.lineTo(212,136);
+  g.quadraticCurveTo(222,148,208,160);
+  g.lineTo(164,196);
+  g.lineTo(216,256);
+  g.quadraticCurveTo(226,268,210,278);
+  g.lineTo(176,282);
+  g.quadraticCurveTo(162,284,152,272);
+  g.lineTo(118,224);
+  g.closePath();
+
+  /* y */
+  g.beginPath();
+  g.moveTo(226,136);
+  g.quadraticCurveTo(222,122,238,122);
+  g.lineTo(268,122);
+  g.quadraticCurveTo(280,122,284,136);
+  g.lineTo(304,208);
+  g.lineTo(324,136);
+  g.quadraticCurveTo(328,122,340,122);
+  g.lineTo(370,122);
+  g.quadraticCurveTo(386,122,382,136);
+  g.lineTo(334,274);
+  g.quadraticCurveTo(320,312,278,324);
+  g.lineTo(254,328);
+  g.quadraticCurveTo(238,330,238,314);
+  g.lineTo(238,294);
+  g.quadraticCurveTo(238,280,254,278);
+  g.lineTo(272,276);
+  g.quadraticCurveTo(286,274,292,258);
+  g.closePath();
+
+  /* n */
+  g.beginPath();
+  g.moveTo(400,136);
+  g.quadraticCurveTo(400,122,414,122);
+  g.lineTo(438,122);
+  g.quadraticCurveTo(452,122,452,136);
+  g.lineTo(452,142);
+  g.quadraticCurveTo(468,120,498,120);
+  g.quadraticCurveTo(542,120,542,168);
+  g.lineTo(542,268);
+  g.quadraticCurveTo(542,282,528,282);
+  g.lineTo(502,282);
+  g.quadraticCurveTo(488,282,488,268);
+  g.lineTo(488,184);
+  g.quadraticCurveTo(488,162,468,162);
+  g.quadraticCurveTo(452,162,452,184);
+  g.lineTo(452,268);
+  g.quadraticCurveTo(452,282,438,282);
+  g.lineTo(414,282);
+  g.quadraticCurveTo(400,282,400,268);
+  g.closePath();
+
+  /* d */
+  g.beginPath();
+  g.moveTo(682,82);
+  g.quadraticCurveTo(682,68,696,68);
+  g.lineTo(722,68);
+  g.quadraticCurveTo(736,68,736,82);
+  g.lineTo(736,268);
+  g.quadraticCurveTo(736,282,722,282);
+  g.lineTo(696,282);
+  g.quadraticCurveTo(682,282,682,268);
+  g.lineTo(682,262);
+  g.quadraticCurveTo(664,284,634,284);
+  g.quadraticCurveTo(576,284,576,202);
+  g.quadraticCurveTo(576,120,634,120);
+  g.quadraticCurveTo(664,120,682,140);
+  g.closePath();
+}
+
+function drawKyndStickerOnCanvas(canvasId){
+  var c=document.getElementById(canvasId);
+  if(!c)return;
+  var g=c.getContext('2d');
+  g.clearRect(0,0,c.width,c.height);
+
+  var srcW=810, srcH=390;
+  var scale=Math.min(c.width/srcW, c.height/srcH);
+  var ox=(c.width - srcW*scale)/2;
+  var oy=(c.height - srcH*scale)/2;
+
+  g.save();
+  g.translate(ox,oy);
+  g.scale(scale,scale);
+
+  /* Thick Bubblegum-Pink Die-Cut Sticker Outline */
+  g.save();
+  g.lineJoin='round';
+  g.lineCap='round';
+  g.strokeStyle='#ff8ec7';
+  g.lineWidth=68;
+  traceKyndPaths(g);
+  g.stroke();
+  g.fillStyle='#ff8ec7';
+  g.fill();
+  g.restore();
+
+  /* White Chunky Letterforms */
+  g.save();
+  g.fillStyle='#ffffff';
+  traceKyndPaths(g);
+  g.fill();
+
+  /* Pink Inner Hole Inside "d" */
+  g.fillStyle='#ff8ec7';
+  g.beginPath();
+  g.arc(656,202,28,0,Math.PI*2);
+  g.fill();
+  g.restore();
+
+  g.restore();
+}
+
+function renderAllKyndLogos(){
+  drawKyndStickerOnCanvas('splashLogoCv');
+  drawKyndStickerOnCanvas('topLogoCv');
+}
 
 var cupLoaded=false;
 var cupProbe=new Image();
@@ -1840,6 +1933,8 @@ function startCtl(n,targetRoom){
     }
   },250);
 }
+
+renderAllKyndLogos();
 
 var hash=location.hash||'';
 var mode=/^#?p([12])(?::([a-z0-9-]+))?$/i.exec(hash);
