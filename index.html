@@ -281,7 +281,7 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
         </div>
         <div class="pink-banner-center">
           <div class="pink-banner-title">
-            <span class="anim-emoji" id="ovEmoji">🎉</span>
+            <span class="anim-emoji hide" id="ovEmoji">🎟️</span>
             <span id="ovBannerHeading">Congratulations!</span>
           </div>
           <div class="pink-banner-prize" id="ovPrize"></div>
@@ -314,7 +314,7 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
     </div>
     <div class="ctl-popup-center">
       <div class="ctl-popup-top">
-        <span class="anim-emoji" id="ctlEmoji">🎉</span>
+        <span class="anim-emoji hide" id="ctlEmoji">🎟️</span>
         <span id="ctlPopupTitle">Congratulations!</span>
       </div>
       <div class="ctl-popup-sub" id="ctlPopupSub"></div>
@@ -396,13 +396,12 @@ var POST_GAME_WAIT=10;
 var peerHost=null,peerConns={1:null,2:null},peerState={1:{dx:0,g:0,on:false,epoch:0},2:{dx:0,g:0,on:false,epoch:0}};
 var roomId='claw-'+Math.random().toString(36).slice(2,8);
 
+/* Only vouchers keep their emoji */
+function isVoucherPrize(prize){
+  return !!(prize && prize.indexOf('Voucher')!==-1);
+}
 function prizeEmoji(prize){
-  if(!prize)return '🎉';
-  if(prize==='Small Free Coffee')return '☕';
-  if(prize==='Large Free Coffee')return '🧋';
-  if(prize.indexOf('Voucher')!==-1)return '🎟️';
-  if(prize==='No Gift - Try Again')return '😔';
-  return '🎁';
+  return isVoucherPrize(prize)?'🎟️':'';
 }
 
 function initAudio(){
@@ -826,13 +825,16 @@ function overlay(show,title,msg,showQrs,showCountdown,prizeText){
 
   if(prizeText){
     var isSad=prizeText==='No Gift - Try Again';
-    emojiEl.textContent=prizeEmoji(prizeText);
-    emojiEl.classList.toggle('sad',isSad);
+    var showVoucherEm=isVoucherPrize(prizeText);
+    emojiEl.textContent=showVoucherEm?'🎟️':'';
+    emojiEl.classList.toggle('hide',!showVoucherEm);
     headingEl.textContent=isSad?'No Gift - Try Again':'Congratulations!';
     prizeEl.textContent=isSad?'Press AGAIN within 10s to try!':'You won: '+prizeText+'!';
     banner.classList.toggle('sad-banner',isSad);
     banner.classList.remove('hide');
   }else{
+    emojiEl.textContent='';
+    emojiEl.classList.add('hide');
     prizeEl.textContent='';
     banner.classList.remove('sad-banner');
     banner.classList.add('hide');
@@ -1262,7 +1264,6 @@ function drawClaw(c,n){
   var hg=ctx.createLinearGradient(x-12,0,x+12,0);hg.addColorStop(0,'#6a7280');hg.addColorStop(0.35,'#f2f4f8');hg.addColorStop(1,'#5a6270');
   rrect(x-11,y-31,22,12,5);ctx.fillStyle=hg;ctx.fill();ctx.strokeStyle='#2b2f38';ctx.lineWidth=1.5;ctx.stroke();
 
-  /* Realistic claw geometry: cradles around ball equator when holding, opens wide when open */
   [-1,1].forEach(function(s){
     var sx=x+s*8;
     var sy=y-21;
@@ -1543,7 +1544,7 @@ function startCtl(n,targetRoom){
     info.className='gift-info';
     var badgeHtml=(cupLoaded && item.name.indexOf('Coffee')!==-1)
       ? '<span class="sticker-wrap small"><img class="sticker-img" src="'+CUP_STICKER_SRC+'" alt="Coffee Sticker"></span>'
-      : '<span class="gift-em">'+prizeEmoji(item.name)+'</span>';
+      : (isVoucherPrize(item.name) ? '<span class="gift-em">🎟️</span>' : '');
     info.innerHTML=badgeHtml+'<div><div class="gift-name">'+item.name+'</div><div class="gift-time">Won '+item.time+'</div></div>';
     var btn=document.createElement('button');
     btn.className='cashier-btn';
@@ -1680,14 +1681,17 @@ function startCtl(n,targetRoom){
     var isWonPrize=gp.s==='over' && gp.prize && !isTryAgain;
 
     if(gp.s==='over' && gp.prize){
-      popupEm.textContent=prizeEmoji(gp.prize);
-      popupEm.classList.toggle('sad',isTryAgain);
+      var showVoucherEm=isVoucherPrize(gp.prize);
+      popupEm.textContent=showVoucherEm?'🎟️':'';
+      popupEm.classList.toggle('hide',!showVoucherEm);
       popupTitle.textContent=isTryAgain?'No Gift - Try Again':'Congratulations!';
       popupSub.textContent=isTryAgain?'Press AGAIN within 10s to try again!':gp.prize+' (Saved below for cashier!)';
       popupEl.classList.toggle('sad-popup',isTryAgain);
       popupEl.classList.remove('hide');
       document.getElementById('cmsg').textContent='';
     }else{
+      popupEm.textContent='';
+      popupEm.classList.add('hide');
       popupEl.classList.add('hide');
       document.getElementById('cmsg').textContent='';
     }
