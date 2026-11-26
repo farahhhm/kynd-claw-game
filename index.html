@@ -41,7 +41,7 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
 .stage{position:relative;width:100%}
 .stage::after{content:"";position:absolute;inset:6px;border-radius:10px;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.28) 0,rgba(255,255,255,.08) 18%,transparent 19%,transparent 30%,rgba(255,255,255,.14) 31%,rgba(255,255,255,.14) 36%,transparent 37%);box-shadow:inset 0 0 24px rgba(255,255,255,.35)}
 #c{width:100%;height:auto;display:block;border-radius:14px;border:6px solid #231452;background:#fff0b3;transition:filter .35s ease}
-#c.blurred{filter:blur(10px) brightness(.75)}
+#c.blurred{filter:blur(7px) brightness(.82)}
 
 .panel{display:flex;align-items:center;justify-content:space-around;margin-top:8px;padding:8px 22px 6px;background:#d62f7f;border-radius:14px;box-shadow:inset 0 2px 0 rgba(255,255,255,.35)}
 .chute{width:126px;height:32px;border-radius:8px;background:#231452;border:2.5px solid #fff}
@@ -59,8 +59,8 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
 
 /* Animated Emojis, Stickers & Pink Congratulation Card */
 @keyframes popInBounce{
-  0%{opacity:0;transform:scale(.45) rotate(-6deg)}
-  65%{opacity:1;transform:scale(1.07) rotate(2deg)}
+  0%{opacity:0;transform:scale(.35) rotate(-8deg)}
+  62%{opacity:1;transform:scale(1.08) rotate(2deg)}
   100%{opacity:1;transform:scale(1) rotate(0deg)}
 }
 @keyframes emojiFloat{
@@ -96,7 +96,7 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
   color:#fff;
   border:3px solid #fff;
   box-shadow:0 6px 0 #9b1653,0 12px 24px rgba(255,79,154,.45);
-  animation:popInBounce .45s cubic-bezier(.22,1,.36,1) both;
+  animation:popInBounce .48s cubic-bezier(.22,1,.36,1) both;
   min-width:290px;
   max-width:94%;
 }
@@ -296,7 +296,7 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
   </div>
   <div class="panel"><div class="stick"></div><div class="chute"></div><div class="btn"></div></div>
 </div>
-<p class="help" id="helpTxt">Align carefully — the motorized claw has real sway, gear vibration &amp; slip challenge on the way to your basket!</p>
+<p class="help" id="helpTxt">Align carefully — the motorized claw has real sway, subtle gear vibration &amp; slip challenge on the way to your basket!</p>
 </div>
 
 <!-- Phone Controller Interface (Left / Right Only + Grab + Saved Gifts Wallet) -->
@@ -388,6 +388,7 @@ var balls=[],claws=[],state,timeLeft,overCountdown=0,wonPrize='',resultSeq=0,las
 var twoPlayerMode=false;
 var lobbyEpoch=0;
 var fx=[],popShards=[],ac=null,glow={a:0,b:0};
+var popAnim=null; // Center-screen ball boom animation state before card appears
 var GAME_SECONDS=20; // 20 seconds round
 var POST_GAME_WAIT=10; // 10 seconds before returning to QR lobby
 
@@ -443,7 +444,7 @@ function sfx(n){
   if(n==='grab'){tone(240,0.12,'sawtooth',0.15,520)}
   else if(n==='clunk'){tone(130,0.09,'square',0.14,75)}
   else if(n==='drop'){tone(500,0.18,'triangle',0.16,160)}
-  else if(n==='pop'){tone(440,0.14,'triangle',0.2,880,0);tone(660,0.2,'triangle',0.2,1174,0.08)}
+  else if(n==='pop'){tone(420,0.14,'triangle',0.22,920,0);tone(680,0.22,'triangle',0.22,1280,0.07)}
   else if(n==='slip'){tone(420,0.22,'sawtooth',0.17,110)}
   else if(n==='miss'){tone(200,0.15,'sawtooth',0.12,110)}
   else if(n==='score'){[523,659,784,1047].forEach(function(f,i){tone(f,0.22,'triangle',0.18,f*1.12,i*0.09)})}
@@ -454,42 +455,53 @@ function sfx(n){
 function pickRandomPrize(){
   return PRIZES[Math.floor(Math.random()*PRIZES.length)];
 }
-function spawnBallPop(x,y,col){
+function spawnCenterBoom(startX,startY,col,prizeText){
   sfx('pop');
-  for(var i=0;i<14;i++){
-    var ang=(Math.PI*2/14)*i + Math.random()*0.25;
-    var spd=3.2+Math.random()*4.8;
-    popShards.push({
-      x:x,y:y,
-      vx:Math.cos(ang)*spd,
-      vy:Math.sin(ang)*spd-2.5,
-      rot:Math.random()*Math.PI*2,
-      vr:(Math.random()-0.5)*0.32,
-      life:42,
-      c:col,
-      r:8+Math.random()*6
-    });
-  }
-}
-function triggerSinglePlayerResult(landedBall){
-  if(state!=='play' || twoPlayerMode)return;
-  var bx=landedBall ? landedBall.x : WL/2;
-  var by=landedBall ? landedBall.y : RIM+20;
-  var bcol=landedBall ? landedBall.c : '#ff4f9a';
-  if(landedBall){
-    balls=balls.filter(function(item){return item!==landedBall});
-  }
-  spawnBallPop(bx,by,bcol);
-
-  wonPrize=pickRandomPrize();
-  resultSeq++;
-  state='over';
-  overCountdown=POST_GAME_WAIT;
+  popAnim={
+    x:startX,
+    y:startY,
+    col:col,
+    prize:prizeText,
+    age:0,
+    popDuration:0.56,
+    popped:false,
+    cardShown:false
+  };
   claws.forEach(function(c){
     if(c.held){c.held.held=false;c.held=null;c.open=true}
     c.phase='idle';c.velX=0;c.pauseTimer=0;c.vibAmt=0;
   });
-  var isNoGift=wonPrize==='No Gift - Try Again';
+  lastPub='';
+  publish();
+}
+function burstCenterBall(p){
+  p.popped=true;
+  var cx=W/2, cy=H/2 - 10;
+  for(var i=0;i<18;i++){
+    var ang=(Math.PI*2/18)*i + Math.random()*0.2;
+    var spd=4.2+Math.random()*6.2;
+    popShards.push({
+      x:cx,y:cy,
+      vx:Math.cos(ang)*spd,
+      vy:Math.sin(ang)*spd-3.2,
+      rot:Math.random()*Math.PI*2,
+      vr:(Math.random()-0.5)*0.36,
+      life:52,
+      c:i%3===0?'#ffe066':p.col,
+      r:13+Math.random()*9
+    });
+  }
+  for(var j=0;j<24;j++){
+    var a=Math.random()*Math.PI*2,sp=3+Math.random()*7;
+    fx.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3,life:55,c:COLORS[j%2]});
+  }
+}
+function showFinalPrizeCard(prizeText){
+  wonPrize=prizeText;
+  resultSeq++;
+  state='over';
+  overCountdown=POST_GAME_WAIT;
+  var isNoGift=prizeText==='No Gift - Try Again';
   if(isNoGift){
     sfx('nogift');
     overlay(
@@ -498,7 +510,7 @@ function triggerSinglePlayerResult(landedBall){
       'The ball popped open with no gift this time — try again!',
       false,
       true,
-      wonPrize
+      prizeText
     );
   }else{
     sfx('prize');
@@ -509,12 +521,23 @@ function triggerSinglePlayerResult(landedBall){
       'The ball popped open and revealed your reward:',
       false,
       true,
-      wonPrize
+      prizeText
     );
   }
   document.getElementById('ovCountdown').textContent='Returning to QR lobby in '+Math.ceil(overCountdown)+'s…';
   lastPub='';
   publish();
+}
+function triggerSinglePlayerResult(landedBall){
+  if(state!=='play' || twoPlayerMode || popAnim)return;
+  var bx=landedBall ? landedBall.x : WL/2;
+  var by=landedBall ? landedBall.y : RIM+20;
+  var bcol=landedBall ? landedBall.c : '#ff4f9a';
+  if(landedBall){
+    balls=balls.filter(function(item){return item!==landedBall});
+  }
+  var chosen=pickRandomPrize();
+  spawnCenterBoom(bx,by,bcol,chosen);
 }
 function celebrate(side,landedBall){
   glow[side]=1;
@@ -557,6 +580,47 @@ function checkScore(){
     if(side&&o.in!==side){o.in=side;if(state==='play')celebrate(side,o)}
   });
 }
+function drawCenterBoom(dt){
+  if(!popAnim)return;
+  popAnim.age+=dt;
+  var p=popAnim;
+  var prog=Math.min(1, p.age / p.popDuration);
+  var ease=1 - Math.pow(1 - prog, 3);
+  var cx=p.x + (W/2 - p.x)*ease;
+  var cy=p.y + ((H/2 - 10) - p.y)*ease;
+  var rad=R + (58 - R)*ease + (prog > 0.78 ? Math.sin((prog - 0.78)*45)*8 : 0);
+
+  if(!p.popped){
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=18;ctx.shadowOffsetY=8;
+    ctx.beginPath();ctx.arc(cx,cy,rad,0,Math.PI*2);ctx.fillStyle=p.col;ctx.fill();ctx.restore();
+
+    var g=ctx.createRadialGradient(cx-rad*0.35,cy-rad*0.4,rad*0.05,cx,cy,rad*1.05);
+    g.addColorStop(0,mix(p.col,'w',0.6));
+    g.addColorStop(0.4,mix(p.col,'w',0.1));
+    g.addColorStop(0.85,mix(p.col,'k',0.32));
+    g.addColorStop(1,mix(p.col,'k',0.58));
+    ctx.beginPath();ctx.arc(cx,cy,rad,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+
+    ctx.save();ctx.fillStyle='rgba(255,255,255,.85)';
+    ctx.beginPath();ctx.ellipse(cx-rad*0.38,cy-rad*0.42,rad*0.28,rad*0.16,-0.7,0,Math.PI*2);ctx.fill();ctx.restore();
+
+    /* Cute pop-top cap in the center */
+    var cg=ctx.createLinearGradient(cx-10,0,cx+10,0);
+    cg.addColorStop(0,'#8a5a10');cg.addColorStop(0.5,'#ffe38a');cg.addColorStop(1,'#a8741a');
+    ctx.fillStyle=cg;rrect(cx-10,cy-rad-7,20,13,4);ctx.fill();
+    ctx.strokeStyle='#231452';ctx.lineWidth=2;ctx.stroke();
+
+    if(prog >= 1){
+      burstCenterBall(p);
+    }
+  }else if(!p.cardShown && p.age >= p.popDuration + 0.16){
+    p.cardShown=true;
+    var finalPrize=p.prize;
+    popAnim=null;
+    showFinalPrizeCard(finalPrize);
+  }
+}
 function drawFx(){
   popShards=popShards.filter(function(s){return s.life>0});
   popShards.forEach(function(s){
@@ -567,7 +631,7 @@ function drawFx(){
     ctx.rotate(s.rot);
     ctx.fillStyle=s.c;
     ctx.strokeStyle='#231452';
-    ctx.lineWidth=2;
+    ctx.lineWidth=2.5;
     ctx.beginPath();
     ctx.arc(0,0,s.r,0,Math.PI);
     ctx.closePath();
@@ -581,7 +645,7 @@ function drawFx(){
     p.x+=p.vx;p.y+=p.vy;if(!p.t)p.vy+=0.25;p.life--;
     ctx.globalAlpha=Math.min(1,p.life/30);
     if(p.t){ctx.fillStyle=p.c;ctx.font='800 34px "Baloo 2",sans-serif';ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='#231452';ctx.strokeText(p.t,p.x,p.y);ctx.fillText(p.t,p.x,p.y)}
-    else{ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,8,8)}
+    else{ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,9,9)}
   });
   ctx.globalAlpha=1;
 }
@@ -630,6 +694,7 @@ function reset(){
   timeLeft=GAME_SECONDS;
   overCountdown=0;
   wonPrize='';
+  popAnim=null;
   updateHud();
 }
 function fmt(t){var s=Math.ceil(t);return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2)}
@@ -649,13 +714,13 @@ function updateHud(){
   document.getElementById('timer').textContent=fmt(Math.max(timeLeft,0));
 }
 function startGrabSequence(c){
-  if(state!=='play')return;
+  if(state!=='play' || popAnim)return;
   if(c.phase!=='idle' || c.held)return;
   c.phase='windupDrop';
   c.pauseTimer=0.18;
   c.open=true;
-  c.vibAmt=1.0;
-  c.swayVel+=(Math.random()<0.5?-1:1)*0.07;
+  c.vibAmt=0.45;
+  c.swayVel+=(Math.random()<0.5?-1:1)*0.05;
   sfx('clunk');
 }
 function attemptPickAtCurrentPos(c){
@@ -674,8 +739,8 @@ function attemptPickAtCurrentPos(c){
       c.open=false;
       c.phase='windupLift';
       c.pauseTimer=0.16;
-      c.vibAmt=1.0;
-      c.swayVel+=(best.x>c.x?-1:1)*0.14;
+      c.vibAmt=0.5;
+      c.swayVel+=(best.x>c.x?-1:1)*0.11;
       sfx('slip');
       setTimeout(function(){if(!c.held)c.open=true},240);
       return;
@@ -686,8 +751,8 @@ function attemptPickAtCurrentPos(c){
     c.open=false;
     c.phase='windupLift';
     c.pauseTimer=0.2;
-    c.vibAmt=1.0;
-    c.swayVel+=(Math.random()<0.5?-1:1)*0.12;
+    c.vibAmt=0.5;
+    c.swayVel+=(Math.random()<0.5?-1:1)*0.09;
     sfx('grab');
   }else{
     sfx('miss');
@@ -705,8 +770,8 @@ function slipHeldBall(c){
   c.held=null;
   c.open=true;
   c.phase='idle';
-  c.vibAmt=1.0;
-  c.swayVel+=(Math.random()<0.5?-1:1)*0.16;
+  c.vibAmt=0.5;
+  c.swayVel+=(Math.random()<0.5?-1:1)*0.12;
   sfx('slip');
   fx.push({x:c.x,y:c.y+36,vx:(Math.random()-0.5)*1.5,vy:-1.1,life:52,c:'#ffe066',t:'SLIP!'});
 }
@@ -727,7 +792,7 @@ function overlay(show,title,msg,showQrs,showCountdown,prizeText){
     emojiEl.textContent=prizeEmoji(prizeText);
     emojiEl.classList.toggle('sad',isSad);
     headingEl.textContent=isSad?'No Gift - Try Again':'Congratulations!';
-    prizeEl.textContent=isSad?'Try again on your next round!':'You won: '+prizeText+'!';
+    prizeEl.textContent=isSad?'Try again!':'You won: '+prizeText+'!';
     banner.classList.toggle('sad-banner',isSad);
     banner.classList.remove('hide');
   }else{
@@ -783,6 +848,7 @@ function startGame(){
   state='play';
   overCountdown=0;
   wonPrize='';
+  popAnim=null;
   overlay(false);
 }
 function physics(){
@@ -845,14 +911,14 @@ function move(dt){
     if(c.phase==='windupDrop'){
       isMoving=true;
       c.pauseTimer-=dt;
-      c.swayVel+=Math.sin(c.vibPhase*2.1)*0.02;
+      c.swayVel+=Math.sin(c.vibPhase*2.1)*0.015;
       if(c.pauseTimer<=0){
         c.phase='descending';
       }
     }else if(c.phase==='descending'){
       isMoving=true;
       c.y+=2.4;
-      c.swayVel+=Math.sin(c.vibPhase*1.6)*0.014;
+      c.swayVel+=Math.sin(c.vibPhase*1.6)*0.01;
       var hitBall=false;
       balls.forEach(function(o){
         if(o.held||o.in)return;
@@ -868,7 +934,7 @@ function move(dt){
     }else if(c.phase==='windupLift'){
       isMoving=true;
       c.pauseTimer-=dt;
-      c.swayVel+=Math.cos(c.vibPhase*2.4)*0.025;
+      c.swayVel+=Math.cos(c.vibPhase*2.4)*0.018;
       if(c.pauseTimer<=0){
         c.phase='lifting';
       }
@@ -880,7 +946,7 @@ function move(dt){
       }
       if(c.y > topY + 2){
         c.y=Math.max(topY, c.y - 2.2);
-        c.swayVel+=Math.sin(c.vibPhase*1.5)*0.016;
+        c.swayVel+=Math.sin(c.vibPhase*1.5)*0.012;
       }else{
         c.y=topY;
         if(c.held){
@@ -902,7 +968,7 @@ function move(dt){
       if(Math.abs(diffX) > 4){
         var stepX=Math.sign(diffX)*Math.min(Math.abs(diffX), 2.5);
         c.x+=stepX;
-        c.swayVel-=stepX*0.015;
+        c.swayVel-=stepX*0.012;
       }else{
         c.x=basketX;
         if(c.held){
@@ -914,7 +980,7 @@ function move(dt){
         }
         c.open=true;
         c.phase='idle';
-        c.vibAmt=1.0;
+        c.vibAmt=0.45;
         sfx('drop');
       }
     }else{
@@ -929,25 +995,25 @@ function move(dt){
       if(c.x<50){c.x=50;c.velX=0}
       if(c.x>W-50){c.x=W-50;c.velX=0}
       if(isMoving){
-        c.swayVel-=c.velX*0.0065;
+        c.swayVel-=c.velX*0.005;
       }
     }
 
-    var targetVib=isMoving ? 1.0 : (c.held ? 0.65 : 0);
+    var targetVib=isMoving ? 0.42 : (c.held ? 0.25 : 0);
     if(targetVib > c.vibAmt){
-      c.vibAmt=Math.min(targetVib, c.vibAmt+dt*12);
+      c.vibAmt=Math.min(targetVib, c.vibAmt+dt*8);
     }else{
       c.vibAmt=Math.max(targetVib, c.vibAmt-dt*4.5);
     }
-    c.vibPhase+=dt*92;
+    c.vibPhase+=dt*72;
 
     c.swayVel+=-c.swayAngle*24*dt;
     c.swayVel*=Math.pow(0.16,dt);
     c.swayAngle+=c.swayVel*dt;
 
-    var motorJitterX=Math.sin(c.vibPhase)*3.4 + Math.sin(c.vibPhase*2.37)*1.8;
-    var motorJitterY=Math.cos(c.vibPhase*1.85)*2.2 + Math.sin(c.vibPhase*3.1)*1.1;
-    var vibX=calm?0:motorJitterX*c.vibAmt + Math.sin(c.swayAngle)*21;
+    var motorJitterX=Math.sin(c.vibPhase)*1.35 + Math.sin(c.vibPhase*2.37)*0.65;
+    var motorJitterY=Math.cos(c.vibPhase*1.85)*0.9 + Math.sin(c.vibPhase*3.1)*0.45;
+    var vibX=calm?0:motorJitterX*c.vibAmt + Math.sin(c.swayAngle)*16;
     var vibY=calm?0:motorJitterY*c.vibAmt;
 
     if(c.held){
@@ -1117,16 +1183,16 @@ function rod(x1,y1,x2,y2,w){
 }
 function drawClaw(c,n){
   if(n===1 && !twoPlayerMode) return;
-  /* Vibration applies ONLY to the lower claw holder/pincer assembly (c.x, c.y) */
-  var motorJitterX=Math.sin(c.vibPhase)*3.4 + Math.sin(c.vibPhase*2.37)*1.8;
-  var motorJitterY=Math.cos(c.vibPhase*1.85)*2.2 + Math.sin(c.vibPhase*3.1)*1.1;
-  var vibX=calm?0:motorJitterX*c.vibAmt + Math.sin(c.swayAngle)*21;
+  /* Gentle vibration on the lower claw holder/pincer assembly only */
+  var motorJitterX=Math.sin(c.vibPhase)*1.35 + Math.sin(c.vibPhase*2.37)*0.65;
+  var motorJitterY=Math.cos(c.vibPhase*1.85)*0.9 + Math.sin(c.vibPhase*3.1)*0.45;
+  var vibX=calm?0:motorJitterX*c.vibAmt + Math.sin(c.swayAngle)*16;
   var vibY=calm?0:motorJitterY*c.vibAmt;
 
   var anchorX=c.x, anchorY=c.y;
   var x=c.x+vibX, y=c.y+vibY, P=c.pal, i, op=c.open;
 
-  /* Upper rail trolley and straight wire stay steady on c.x / c.y */
+  /* Upper rail trolley and straight wire stay steady on anchorX / anchorY */
   rrect(anchorX-24,RAIL-20,48,26,6);ctx.fillStyle=metal(anchorX-24,anchorX+24);ctx.fill();ctx.strokeStyle='#2b2f38';ctx.lineWidth=2;ctx.stroke();
   ctx.font='800 14px "Baloo 2",sans-serif';ctx.textAlign='center';ctx.fillStyle=P.lo;ctx.fillText('P'+(n+1),anchorX,RAIL-3);
   [-14,14].forEach(function(o){
@@ -1147,10 +1213,10 @@ function drawClaw(c,n){
     ctx.fillStyle='rgba(255,255,255,.65)';ctx.beginPath();ctx.ellipse(anchorX-rx*0.38,by-bh*0.12,rx*0.2,bh*0.18,0,0,Math.PI*2);ctx.fill();
   }
 
-  /* Lower claw holder / pincer assembly vibrates & sways */
+  /* Lower claw holder / pincer assembly (silver cap, rods, joints, and tips) */
   ctx.save();
   ctx.translate(x,y-25);
-  ctx.rotate(calm?0:(c.swayAngle*1.08 + Math.sin(c.vibPhase*1.15)*0.075*c.vibAmt));
+  ctx.rotate(calm?0:(c.swayAngle*1.05 + Math.sin(c.vibPhase*1.15)*0.025*c.vibAmt));
   ctx.translate(-x,-(y-25));
 
   var hg=ctx.createLinearGradient(x-12,0,x+12,0);hg.addColorStop(0,'#6a7280');hg.addColorStop(0.35,'#f2f4f8');hg.addColorStop(1,'#5a6270');
@@ -1177,11 +1243,14 @@ function draw(){
 }
 function press(c){
   initAudio();
+  if(popAnim)return;
   if(state==='ready'){startGame()}
-  else if(state==='over'){
+  else if(state==='over' && wonPrize==='No Gift - Try Again'){
     startGame();
   }
-  else startGrabSequence(c);
+  else if(state==='play'){
+    startGrabSequence(c);
+  }
 }
 function readPeers(){
   if(room){
@@ -1263,7 +1332,7 @@ function updQr(){
 function loop(t){
   var dt=Math.min((t-last)/1000,0.1);last=t;
   readPeers();
-  if(state==='play'){
+  if(state==='play' && !popAnim){
     move(dt);timeLeft-=dt;
     if(timeLeft<=0){
       timeLeft=0;state='over';overCountdown=POST_GAME_WAIT;
@@ -1271,10 +1340,10 @@ function loop(t){
       sfx('end');clap();
       var c=counts();
       if(!twoPlayerMode){
-        overlay(true,'Time’s up!','You collected '+c[0]+' ball'+(c[0]===1?'':'s')+'! — Tap AGAIN on your phone to play again.',false,true,'');
+        overlay(true,'Time’s up!','You collected '+c[0]+' ball'+(c[0]===1?'':'s')+'!',false,true,'');
       }else{
         var msg=c[0]===c[1]?'It’s a tie!':(c[0]>c[1]?'Player 1 wins!':'Player 2 wins!');
-        overlay(true,'Time’s up!',msg+' ('+c[0]+' to '+c[1]+') — Tap AGAIN on your phone to play again!',false,true,'');
+        overlay(true,'Time’s up!',msg+' ('+c[0]+' to '+c[1]+')',false,true,'');
       }
       document.getElementById('ovCountdown').textContent='Returning to QR lobby in '+Math.ceil(overCountdown)+'s…';
     }
@@ -1286,7 +1355,7 @@ function loop(t){
       returnToQrLobby();
     }
   }
-  physics();checkScore();updateHud();draw();drawFx();updQr();publish();
+  physics();checkScore();updateHud();draw();drawCenterBoom(dt);drawFx();updQr();publish();
   requestAnimationFrame(loop);
 }
 
@@ -1487,7 +1556,11 @@ function startCtl(n,targetRoom){
     ['pointerup','pointercancel','lostpointercapture'].forEach(function(ev){b.addEventListener(ev,function(){if(dir[d]){dir[d]=0;b.classList.remove('on');upd()}})});
   });
   var dropB=document.getElementById('drop');
-  dropB.addEventListener('pointerdown',function(e){e.preventDefault();g++;send();dropB.classList.add('on');if(navigator.vibrate)navigator.vibrate([30,20,30])});
+  dropB.addEventListener('pointerdown',function(e){
+    e.preventDefault();
+    if(lastGp && lastGp.s==='over' && lastGp.prize && lastGp.prize!=='No Gift - Try Again')return;
+    g++;send();dropB.classList.add('on');if(navigator.vibrate)navigator.vibrate([30,20,30]);
+  });
   ['pointerup','pointercancel','pointerleave'].forEach(function(ev){dropB.addEventListener(ev,function(){dropB.classList.remove('on')})});
   el.addEventListener('contextmenu',function(e){e.preventDefault()});
 
@@ -1521,6 +1594,8 @@ function startCtl(n,targetRoom){
       refreshStickerViews();
       document.getElementById('cmsg').textContent='Scan the QR code on screen to join the new game.';
       dropB.classList.remove('busy');
+      dropB.disabled=false;
+      dropB.style.opacity='1';
       dropB.textContent='JOIN';
       return;
     }
@@ -1530,13 +1605,15 @@ function startCtl(n,targetRoom){
     var popupEm=document.getElementById('ctlEmoji');
     var popupTitle=document.getElementById('ctlPopupTitle');
     var popupSub=document.getElementById('ctlPopupSub');
+    var isTryAgain=gp.s==='over' && gp.prize==='No Gift - Try Again';
+    var isWonPrize=gp.s==='over' && gp.prize && !isTryAgain;
+
     if(gp.s==='over' && gp.prize){
-      var isSad=gp.prize==='No Gift - Try Again';
       popupEm.textContent=prizeEmoji(gp.prize);
-      popupEm.classList.toggle('sad',isSad);
-      popupTitle.textContent=isSad?'No Gift - Try Again':'Congratulations!';
-      popupSub.textContent=isSad?'No gift this time — tap AGAIN to try!':gp.prize+' (Saved below for cashier!)';
-      popupEl.classList.toggle('sad-popup',isSad);
+      popupEm.classList.toggle('sad',isTryAgain);
+      popupTitle.textContent=isTryAgain?'No Gift - Try Again':'Congratulations!';
+      popupSub.textContent=isTryAgain?'No gift this time — tap AGAIN to try!':gp.prize+' (Saved below for cashier!)';
+      popupEl.classList.toggle('sad-popup',isTryAgain);
       popupEl.classList.remove('hide');
       document.getElementById('cmsg').textContent='';
     }else{
@@ -1554,7 +1631,15 @@ function startCtl(n,targetRoom){
     var s=Math.max(0,gp.t|0);document.getElementById('cti').textContent=Math.floor(s/60)+':'+('0'+(s%60)).slice(-2);
     var busy=n===1?gp.busy1:gp.busy2;
     dropB.classList.toggle('busy',!!busy);
-    dropB.textContent=gp.s==='over'?'AGAIN':(busy?'GRABBING…':'GRAB');
+    if(isWonPrize){
+      dropB.disabled=true;
+      dropB.style.opacity='.55';
+      dropB.textContent='WON ✓';
+    }else{
+      dropB.disabled=false;
+      dropB.style.opacity='1';
+      dropB.textContent=isTryAgain?'AGAIN':(busy?'GRABBING…':'GRAB');
+    }
   },250);
 }
 
