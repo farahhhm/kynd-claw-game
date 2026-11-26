@@ -96,7 +96,7 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
   color:#fff;
   border:3px solid #fff;
   box-shadow:0 6px 0 #9b1653,0 12px 24px rgba(255,79,154,.45);
-  animation:popInBounce .48s cubic-bezier(.22,1,.36,1) both;
+  animation:popInBounce .65s cubic-bezier(.22,1,.36,1) both;
   min-width:290px;
   max-width:94%;
 }
@@ -111,7 +111,7 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
   width:72px;
   height:72px;
   filter:drop-shadow(0 5px 10px rgba(0,0,0,.35));
-  animation:cornerCupPop .5s cubic-bezier(.22,1,.36,1) both, emojiFloat 1.8s ease-in-out .5s infinite;
+  animation:cornerCupPop .65s cubic-bezier(.22,1,.36,1) both, emojiFloat 1.8s ease-in-out .65s infinite;
   z-index:2;
 }
 
@@ -167,7 +167,7 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
   border:3px solid #fff;
   color:#fff;
   box-shadow:0 5px 0 #9b1653;
-  animation:popInBounce .42s cubic-bezier(.22,1,.36,1) both;
+  animation:popInBounce .52s cubic-bezier(.22,1,.36,1) both;
 }
 .ctl-popup.sad-popup{
   background:linear-gradient(135deg,#ff7aa8,#cc3876 65%,#941f52);
@@ -179,7 +179,7 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
   width:56px;
   height:56px;
   filter:drop-shadow(0 4px 8px rgba(0,0,0,.35));
-  animation:cornerCupPop .48s cubic-bezier(.22,1,.36,1) both, emojiFloat 1.8s ease-in-out .5s infinite;
+  animation:cornerCupPop .55s cubic-bezier(.22,1,.36,1) both, emojiFloat 1.8s ease-in-out .55s infinite;
 }
 .ctl-popup-center{padding:2px 20px}
 .ctl-popup-top{display:flex;align-items:center;justify-content:center;gap:6px;font-size:1.18rem;font-weight:800;text-shadow:0 2px 0 rgba(0,0,0,.22)}
@@ -388,6 +388,7 @@ var twoPlayerMode=false;
 var lobbyEpoch=0;
 var fx=[],popShards=[],ac=null,glow={a:0,b:0};
 var popAnim=null;
+var pendingBasketBall=null; // Waits until the ball drops down inside the basket before popping
 var GAME_SECONDS=20;
 var POST_GAME_WAIT=10;
 
@@ -443,7 +444,7 @@ function sfx(n){
   if(n==='grab'){tone(240,0.12,'sawtooth',0.15,520)}
   else if(n==='clunk'){tone(130,0.09,'square',0.14,75)}
   else if(n==='drop'){tone(500,0.18,'triangle',0.16,160)}
-  else if(n==='pop'){tone(420,0.14,'triangle',0.22,920,0);tone(680,0.22,'triangle',0.22,1280,0.07)}
+  else if(n==='pop'){tone(380,0.22,'triangle',0.22,860,0);tone(620,0.32,'triangle',0.22,1220,0.14)}
   else if(n==='slip'){tone(420,0.22,'sawtooth',0.17,110)}
   else if(n==='miss'){tone(200,0.15,'sawtooth',0.12,110)}
   else if(n==='score'){[523,659,784,1047].forEach(function(f,i){tone(f,0.22,'triangle',0.18,f*1.12,i*0.09)})}
@@ -462,7 +463,8 @@ function spawnCenterBoom(startX,startY,col,prizeText){
     col:col,
     prize:prizeText,
     age:0,
-    popDuration:0.56,
+    popDuration:1.25, // Slower, longer ball expansion/pop on screen
+    burstDelay:0.55,  // Time after burst before result card opens
     popped:false,
     cardShown:false
   };
@@ -476,23 +478,23 @@ function spawnCenterBoom(startX,startY,col,prizeText){
 function burstCenterBall(p){
   p.popped=true;
   var cx=W/2, cy=H/2 - 10;
-  for(var i=0;i<18;i++){
-    var ang=(Math.PI*2/18)*i + Math.random()*0.2;
-    var spd=4.2+Math.random()*6.2;
+  for(var i=0;i<22;i++){
+    var ang=(Math.PI*2/22)*i + Math.random()*0.2;
+    var spd=3.2+Math.random()*4.8;
     popShards.push({
       x:cx,y:cy,
       vx:Math.cos(ang)*spd,
-      vy:Math.sin(ang)*spd-3.2,
+      vy:Math.sin(ang)*spd-2.4,
       rot:Math.random()*Math.PI*2,
-      vr:(Math.random()-0.5)*0.36,
-      life:52,
+      vr:(Math.random()-0.5)*0.25,
+      life:78,
       c:i%3===0?'#ffe066':p.col,
-      r:13+Math.random()*9
+      r:14+Math.random()*9
     });
   }
-  for(var j=0;j<24;j++){
-    var a=Math.random()*Math.PI*2,sp=3+Math.random()*7;
-    fx.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3,life:55,c:COLORS[j%2]});
+  for(var j=0;j<28;j++){
+    var a=Math.random()*Math.PI*2,sp=2.2+Math.random()*5.2;
+    fx.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2.2,life:78,c:COLORS[j%2]});
   }
 }
 function showFinalPrizeCard(prizeText){
@@ -527,17 +529,6 @@ function showFinalPrizeCard(prizeText){
   lastPub='';
   publish();
 }
-function triggerSinglePlayerResult(landedBall){
-  if(state!=='play' || twoPlayerMode || popAnim)return;
-  var bx=landedBall ? landedBall.x : WL/2;
-  var by=landedBall ? landedBall.y : RIM+20;
-  var bcol=landedBall ? landedBall.c : '#ff4f9a';
-  if(landedBall){
-    balls=balls.filter(function(item){return item!==landedBall});
-  }
-  var chosen=pickRandomPrize();
-  spawnCenterBoom(bx,by,bcol,chosen);
-}
 function celebrate(side,landedBall){
   glow[side]=1;
   var col=side==='a'?'#ff4f9a':'#3fa322',cx=side==='a'?WL/2:(WR+W)/2;
@@ -548,11 +539,39 @@ function celebrate(side,landedBall){
   fx.push({x:cx,y:RIM-30,vx:0,vy:-1.2,life:70,c:col,t:'+1!'});
   var el=document.getElementById(side==='a'?'ca':'cb');
   if(el.animate&&!matchMedia('(prefers-reduced-motion:reduce)').matches)el.animate([{transform:'scale(1.6)'},{transform:'scale(1)'}],{duration:350});
-  if(!twoPlayerMode && side==='a' && state==='play'){
-    triggerSinglePlayerResult(landedBall);
+  if(!twoPlayerMode && side==='a' && state==='play' && !popAnim && !pendingBasketBall){
+    /* Wait until the ball drops down into the basket before popping */
+    pendingBasketBall={
+      ball:landedBall||null,
+      settledTimer:0,
+      prize:pickRandomPrize()
+    };
   }else if(state==='play'){
     sfx('score');
     clap();
+  }
+}
+
+function updatePendingBasketPop(dt){
+  if(!pendingBasketBall || popAnim || state!=='play')return;
+  var b=pendingBasketBall.ball;
+  var insideBasket=b && !b.held && b.x < WL - 4 && b.y >= RIM + 12;
+  var settled=b && !b.held && (b.y >= FLOOR - R - 2 || Math.abs(b.vy) < 0.8);
+
+  if(insideBasket || settled){
+    pendingBasketBall.settledTimer+=dt;
+    /* Let the user see the ball drop down into the basket first */
+    if(pendingBasketBall.settledTimer >= 0.45){
+      var bx=b ? b.x : WL/2;
+      var by=b ? b.y : RIM+45;
+      var bcol=b ? b.c : '#ff4f9a';
+      var prizeText=pendingBasketBall.prize;
+      if(b){
+        balls=balls.filter(function(item){return item!==b});
+      }
+      pendingBasketBall=null;
+      spawnCenterBoom(bx,by,bcol,prizeText);
+    }
   }
 }
 
@@ -583,14 +602,15 @@ function drawCenterBoom(dt){
   popAnim.age+=dt;
   var p=popAnim;
   var prog=Math.min(1, p.age / p.popDuration);
-  var ease=1 - Math.pow(1 - prog, 3);
+  var ease=1 - Math.pow(1 - prog, 2.2);
   var cx=p.x + (W/2 - p.x)*ease;
   var cy=p.y + ((H/2 - 10) - p.y)*ease;
-  var rad=R + (58 - R)*ease + (prog > 0.78 ? Math.sin((prog - 0.78)*45)*8 : 0);
+  var pulse=(prog > 0.65) ? Math.sin((prog - 0.65)*34)*10 : 0;
+  var rad=R + (64 - R)*ease + pulse;
 
   if(!p.popped){
     ctx.save();
-    ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=18;ctx.shadowOffsetY=8;
+    ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=20;ctx.shadowOffsetY=8;
     ctx.beginPath();ctx.arc(cx,cy,rad,0,Math.PI*2);ctx.fillStyle=p.col;ctx.fill();ctx.restore();
 
     var g=ctx.createRadialGradient(cx-rad*0.35,cy-rad*0.4,rad*0.05,cx,cy,rad*1.05);
@@ -611,7 +631,7 @@ function drawCenterBoom(dt){
     if(prog >= 1){
       burstCenterBall(p);
     }
-  }else if(!p.cardShown && p.age >= p.popDuration + 0.16){
+  }else if(!p.cardShown && p.age >= p.popDuration + p.burstDelay){
     p.cardShown=true;
     var finalPrize=p.prize;
     popAnim=null;
@@ -621,9 +641,9 @@ function drawCenterBoom(dt){
 function drawFx(){
   popShards=popShards.filter(function(s){return s.life>0});
   popShards.forEach(function(s){
-    s.x+=s.vx;s.y+=s.vy;s.vy+=0.28;s.rot+=s.vr;s.life--;
+    s.x+=s.vx;s.y+=s.vy;s.vy+=0.2;s.rot+=s.vr;s.life--;
     ctx.save();
-    ctx.globalAlpha=Math.min(1,s.life/20);
+    ctx.globalAlpha=Math.min(1,s.life/28);
     ctx.translate(s.x,s.y);
     ctx.rotate(s.rot);
     ctx.fillStyle=s.c;
@@ -639,8 +659,8 @@ function drawFx(){
 
   fx=fx.filter(function(p){return p.life>0});
   fx.forEach(function(p){
-    p.x+=p.vx;p.y+=p.vy;if(!p.t)p.vy+=0.25;p.life--;
-    ctx.globalAlpha=Math.min(1,p.life/30);
+    p.x+=p.vx;p.y+=p.vy;if(!p.t)p.vy+=0.2;p.life--;
+    ctx.globalAlpha=Math.min(1,p.life/35);
     if(p.t){ctx.fillStyle=p.c;ctx.font='800 34px "Baloo 2",sans-serif';ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='#231452';ctx.strokeText(p.t,p.x,p.y);ctx.fillText(p.t,p.x,p.y)}
     else{ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,9,9)}
   });
@@ -694,6 +714,7 @@ function reset(){
   overCountdown=0;
   wonPrize='';
   popAnim=null;
+  pendingBasketBall=null;
   updateHud();
 }
 function fmt(t){var s=Math.ceil(t);return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2)}
@@ -713,13 +734,13 @@ function updateHud(){
   document.getElementById('timer').textContent=fmt(Math.max(timeLeft,0));
 }
 function startGrabSequence(c){
-  if(state!=='play' || popAnim)return;
+  if(state!=='play' || popAnim || pendingBasketBall)return;
   if(c.phase!=='idle' || c.held)return;
   c.phase='windupDrop';
-  c.pauseTimer=0.22;
+  c.pauseTimer=0.25;
   c.open=true;
-  c.vibAmt=0.35;
-  c.swayVel+=(Math.random()<0.5?-1:1)*0.04;
+  c.vibAmt=0.32;
+  c.swayVel+=(Math.random()<0.5?-1:1)*0.035;
   sfx('clunk');
 }
 function attemptPickAtCurrentPos(c){
@@ -737,11 +758,11 @@ function attemptPickAtCurrentPos(c){
       c.held=null;
       c.open=false;
       c.phase='windupLift';
-      c.pauseTimer=0.2;
-      c.vibAmt=0.4;
-      c.swayVel+=(best.x>c.x?-1:1)*0.08;
+      c.pauseTimer=0.22;
+      c.vibAmt=0.38;
+      c.swayVel+=(best.x>c.x?-1:1)*0.07;
       sfx('slip');
-      setTimeout(function(){if(!c.held)c.open=true},260);
+      setTimeout(function(){if(!c.held)c.open=true},280);
       return;
     }
     c.held=best;
@@ -749,28 +770,28 @@ function attemptPickAtCurrentPos(c){
     c.gripOffset=offset;
     c.open=false;
     c.phase='windupLift';
-    c.pauseTimer=0.24;
-    c.vibAmt=0.4;
-    c.swayVel+=(Math.random()<0.5?-1:1)*0.07;
+    c.pauseTimer=0.26;
+    c.vibAmt=0.38;
+    c.swayVel+=(Math.random()<0.5?-1:1)*0.06;
     sfx('grab');
   }else{
     sfx('miss');
     c.open=false;
     c.phase='windupLift';
-    c.pauseTimer=0.2;
-    setTimeout(function(){if(!c.held)c.open=true},200);
+    c.pauseTimer=0.22;
+    setTimeout(function(){if(!c.held)c.open=true},220);
   }
 }
 function slipHeldBall(c){
   if(!c.held)return;
   var b=c.held;
   b.held=false;
-  b.vy=1.1;
+  b.vy=1.0;
   c.held=null;
   c.open=true;
   c.phase='idle';
-  c.vibAmt=0.4;
-  c.swayVel+=(Math.random()<0.5?-1:1)*0.09;
+  c.vibAmt=0.38;
+  c.swayVel+=(Math.random()<0.5?-1:1)*0.08;
   sfx('slip');
   fx.push({x:c.x,y:c.y+36,vx:(Math.random()-0.5)*1.2,vy:-1,life:52,c:'#ffe066',t:'SLIP!'});
 }
@@ -848,12 +869,13 @@ function startGame(){
   overCountdown=0;
   wonPrize='';
   popAnim=null;
+  pendingBasketBall=null;
   overlay(false);
 }
 function physics(){
   balls.forEach(function(o){
     if(o.held){o.in=null;return}
-    o.vy+=0.55;o.y+=o.vy;
+    o.vy+=0.48;o.y+=o.vy;
     if(o.y>FLOOR-R){o.y=FLOOR-R;o.vy=0}
     if(o.x<R)o.x=R;if(o.x>W-R)o.x=W-R;
     if(o.in==='a'){
@@ -901,7 +923,7 @@ function physics(){
   }
 }
 
-/* Slower, realistic arcade grabber motion with pendulum swing & right-twist drop-off */
+/* Slower grabber motion with pendulum swing & right-twist drop-off */
 function move(dt){
   var activeClaws=twoPlayerMode?claws:[claws[0]];
   activeClaws.forEach(function(c){
@@ -917,14 +939,14 @@ function move(dt){
     if(c.phase==='windupDrop'){
       isMoving=true;
       c.pauseTimer-=dt;
-      c.swayVel+=Math.sin(c.vibPhase*1.7)*0.012;
+      c.swayVel+=Math.sin(c.vibPhase*1.7)*0.01;
       if(c.pauseTimer<=0){
         c.phase='descending';
       }
     }else if(c.phase==='descending'){
       isMoving=true;
-      c.y+=1.55; // Slower descent
-      c.swayVel+=Math.sin(c.vibPhase*1.3)*0.008;
+      c.y+=1.05; // Slower descent
+      c.swayVel+=Math.sin(c.vibPhase*1.3)*0.007;
       var hitBall=false;
       balls.forEach(function(o){
         if(o.held||o.in)return;
@@ -940,19 +962,19 @@ function move(dt){
     }else if(c.phase==='windupLift'){
       isMoving=true;
       c.pauseTimer-=dt;
-      c.swayVel+=Math.cos(c.vibPhase*1.9)*0.014;
+      c.swayVel+=Math.cos(c.vibPhase*1.9)*0.012;
       if(c.pauseTimer<=0){
         c.phase='lifting';
       }
     }else if(c.phase==='lifting'){
       isMoving=true;
-      if(c.held && Math.random()<dt*(0.16 + (c.gripOffset/54)*0.34 + Math.abs(c.swayAngle)*0.3)){
+      if(c.held && Math.random()<dt*(0.14 + (c.gripOffset/54)*0.3 + Math.abs(c.swayAngle)*0.28)){
         slipHeldBall(c);
         return;
       }
       if(c.y > topY + 2){
-        c.y=Math.max(topY, c.y - 1.45); // Slower lift
-        c.swayVel+=Math.sin(c.vibPhase*1.2)*0.01;
+        c.y=Math.max(topY, c.y - 1.0); // Slower lift
+        c.swayVel+=Math.sin(c.vibPhase*1.2)*0.008;
       }else{
         c.y=topY;
         if(c.held){
@@ -965,72 +987,70 @@ function move(dt){
     }else if(c.phase==='toBasket'){
       isMoving=true;
       c.y=topY;
-      if(c.held && Math.random()<dt*(0.18 + (c.gripOffset/54)*0.36 + Math.abs(c.swayAngle)*0.34)){
+      if(c.held && Math.random()<dt*(0.15 + (c.gripOffset/54)*0.32 + Math.abs(c.swayAngle)*0.3)){
         slipHeldBall(c);
         return;
       }
       var basketX=c.idx===0 ? WL/2 : (WR+W)/2;
       var diffX=basketX - c.x;
       if(Math.abs(diffX) > 4){
-        var stepX=Math.sign(diffX)*Math.min(Math.abs(diffX), 1.55); // Slower carry to basket
+        var stepX=Math.sign(diffX)*Math.min(Math.abs(diffX), 1.05); // Slower carry to basket
         c.x+=stepX;
-        c.swayVel-=stepX*0.014;
-        /* Subtle right-leaning rotation as it approaches the drop-off */
+        c.swayVel-=stepX*0.012;
         targetTwist=0.26;
       }else{
         c.x=basketX;
-        /* Characteristic end-of-travel: lift slightly & rotate right before releasing the ball */
         targetTwist=0.28;
-        c.dropLiftTimer=0.26;
+        c.dropLiftTimer=0.28;
         if(c.held){
-          c.held.x=c.x + 8;
-          c.held.y=c.y+22;
+          c.held.x=Math.min(WL - R - 8, c.x + 4);
+          c.held.y=Math.max(RIM - R - 6, c.y + 24);
           c.held.held=false;
-          c.held.vy=1.2;
+          c.held.vy=1.0;
           c.held=null;
         }
         c.open=true;
         c.phase='idle';
-        c.vibAmt=0.35;
+        c.vibAmt=0.3;
         sfx('drop');
       }
     }else{
       c.y=topY;
       var dirX=Math.max(-1,Math.min(1,c.dx));
-      var targetVel=dirX*1.55; // Slower horizontal movement
-      var accel=dirX!==0 ? 8.5 : 11;
+      var targetVel=dirX*1.05; // Slower horizontal movement
+      var accel=dirX!==0 ? 7.5 : 10;
       c.velX+=(targetVel - c.velX)*Math.min(1, accel*dt);
       if(Math.abs(c.velX)<0.02 && dirX===0)c.velX=0;
-      isMoving=Math.abs(c.velX)>0.06;
+      isMoving=Math.abs(c.velX)>0.05;
       c.x+=c.velX;
       if(c.x<50){c.x=50;c.velX=0}
       if(c.x>W-50){c.x=W-50;c.velX=0}
       if(isMoving){
-        c.swayVel-=c.velX*0.006;
+        c.swayVel-=c.velX*0.005;
       }
       if(c.dropLiftTimer > 0){
-        targetTwist=0.26 * (c.dropLiftTimer / 0.26);
+        targetTwist=0.26 * (c.dropLiftTimer / 0.28);
       }
     }
 
-    c.rightTwist+=(targetTwist - c.rightTwist)*Math.min(1, 7*dt);
+    c.rightTwist+=(targetTwist - c.rightTwist)*Math.min(1, 6*dt);
 
-    var targetVib=isMoving ? 0.34 : (c.held ? 0.2 : 0);
+    var targetVib=isMoving ? 0.3 : (c.held ? 0.18 : 0);
     if(targetVib > c.vibAmt){
-      c.vibAmt=Math.min(targetVib, c.vibAmt+dt*6.5);
+      c.vibAmt=Math.min(targetVib, c.vibAmt+dt*6);
     }else{
       c.vibAmt=Math.max(targetVib, c.vibAmt-dt*4);
     }
-    c.vibPhase+=dt*64;
+    c.vibPhase+=dt*60;
 
-    c.swayVel+=-c.swayAngle*18*dt;
-    c.swayVel*=Math.pow(0.22,dt);
+    c.swayVel+=-c.swayAngle*16*dt;
+    c.swayVel*=Math.pow(0.24,dt);
     c.swayAngle+=c.swayVel*dt;
 
-    var liftOffsetY=(c.dropLiftTimer > 0) ? -Math.sin((c.dropLiftTimer/0.26)*Math.PI)*9 : 0;
-    var motorJitterX=Math.sin(c.vibPhase)*1.2 + Math.sin(c.vibPhase*2.37)*0.55;
-    var motorJitterY=Math.cos(c.vibPhase*1.85)*0.8 + Math.sin(c.vibPhase*3.1)*0.4;
-    var vibX=calm?0:motorJitterX*c.vibAmt + Math.sin(c.swayAngle)*18;
+    var liftOffsetY=(c.dropLiftTimer > 0) ? -Math.sin((c.dropLiftTimer/0.28)*Math.PI)*8 : 0;
+    var motorJitterX=Math.sin(c.vibPhase)*1.1 + Math.sin(c.vibPhase*2.37)*0.5;
+    var motorJitterY=Math.cos(c.vibPhase*1.85)*0.75 + Math.sin(c.vibPhase*3.1)*0.35;
+    var vibX=calm?0:motorJitterX*c.vibAmt + Math.sin(c.swayAngle)*16;
     var vibY=calm?0:motorJitterY*c.vibAmt + liftOffsetY;
 
     if(c.held){
@@ -1200,10 +1220,10 @@ function rod(x1,y1,x2,y2,w){
 }
 function drawClaw(c,n){
   if(n===1 && !twoPlayerMode) return;
-  var liftOffsetY=(c.dropLiftTimer > 0) ? -Math.sin((c.dropLiftTimer/0.26)*Math.PI)*9 : 0;
-  var motorJitterX=Math.sin(c.vibPhase)*1.2 + Math.sin(c.vibPhase*2.37)*0.55;
-  var motorJitterY=Math.cos(c.vibPhase*1.85)*0.8 + Math.sin(c.vibPhase*3.1)*0.4;
-  var vibX=calm?0:motorJitterX*c.vibAmt + Math.sin(c.swayAngle)*18;
+  var liftOffsetY=(c.dropLiftTimer > 0) ? -Math.sin((c.dropLiftTimer/0.28)*Math.PI)*8 : 0;
+  var motorJitterX=Math.sin(c.vibPhase)*1.1 + Math.sin(c.vibPhase*2.37)*0.5;
+  var motorJitterY=Math.cos(c.vibPhase*1.85)*0.75 + Math.sin(c.vibPhase*3.1)*0.35;
+  var vibX=calm?0:motorJitterX*c.vibAmt + Math.sin(c.swayAngle)*16;
   var vibY=calm?0:motorJitterY*c.vibAmt + liftOffsetY;
 
   var anchorX=c.x, anchorY=c.y;
@@ -1229,7 +1249,6 @@ function drawClaw(c,n){
     ctx.fillStyle='rgba(255,255,255,.65)';ctx.beginPath();ctx.ellipse(anchorX-rx*0.38,by-bh*0.12,rx*0.2,bh*0.18,0,0,Math.PI*2);ctx.fill();
   }
 
-  /* Lower claw assembly with pendulum sway, right-hand drop-off twist, and gentle vibration */
   ctx.save();
   ctx.translate(x,y-25);
   ctx.rotate(calm?0:(c.swayAngle*1.1 + c.rightTwist + Math.sin(c.vibPhase*1.15)*0.02*c.vibAmt));
@@ -1259,7 +1278,7 @@ function draw(){
 }
 function press(c){
   initAudio();
-  if(popAnim)return;
+  if(popAnim || pendingBasketBall)return;
   if(state==='ready'){startGame()}
   else if(state==='over' && wonPrize==='No Gift - Try Again'){
     startGame();
@@ -1349,7 +1368,12 @@ function loop(t){
   var dt=Math.min((t-last)/1000,0.1);last=t;
   readPeers();
   if(state==='play' && !popAnim){
-    move(dt);timeLeft-=dt;
+    if(!pendingBasketBall){
+      move(dt);
+      timeLeft-=dt;
+    }else{
+      updatePendingBasketPop(dt);
+    }
     if(timeLeft<=0){
       timeLeft=0;state='over';overCountdown=POST_GAME_WAIT;
       claws.forEach(function(c){if(c.held){c.held.held=false;c.held=null;c.open=true}c.phase='idle';c.velX=0;c.vibAmt=0;c.dropLiftTimer=0;c.rightTwist=0});
