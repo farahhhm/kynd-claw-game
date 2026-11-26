@@ -296,7 +296,7 @@ body.isctl{height:auto;min-height:100%;overflow:auto;justify-content:flex-start;
   </div>
   <div class="panel"><div class="stick"></div><div class="chute"></div><div class="btn"></div></div>
 </div>
-<p class="help" id="helpTxt">Align carefully — the motorized claw has natural cable swing, right-tilt drop-off &amp; slip challenge on the way to your basket!</p>
+<p class="help" id="helpTxt">Align carefully — the motorized claw has natural cable swing, straight basket drop-off &amp; slip challenge on the way to your basket!</p>
 </div>
 
 <!-- Phone Controller Interface (Left / Right Only + Grab + Saved Gift Wallet) -->
@@ -388,7 +388,7 @@ var twoPlayerMode=false;
 var lobbyEpoch=0;
 var fx=[],popShards=[],ac=null,glow={a:0,b:0};
 var popAnim=null;
-var pendingBasketBall=null; // Waits until the ball drops down inside the basket before popping
+var pendingBasketBall=null;
 var GAME_SECONDS=20;
 var POST_GAME_WAIT=10;
 
@@ -463,14 +463,14 @@ function spawnCenterBoom(startX,startY,col,prizeText){
     col:col,
     prize:prizeText,
     age:0,
-    popDuration:1.25, // Slower, longer ball expansion/pop on screen
-    burstDelay:0.55,  // Time after burst before result card opens
+    popDuration:1.25,
+    burstDelay:0.55,
     popped:false,
     cardShown:false
   };
   claws.forEach(function(c){
     if(c.held){c.held.held=false;c.held=null;c.open=true}
-    c.phase='idle';c.velX=0;c.pauseTimer=0;c.vibAmt=0;c.dropLiftTimer=0;c.rightTwist=0;
+    c.phase='idle';c.velX=0;c.pauseTimer=0;c.vibAmt=0;c.rightTwist=0;
   });
   lastPub='';
   publish();
@@ -508,7 +508,7 @@ function showFinalPrizeCard(prizeText){
     overlay(
       true,
       'Oh No!',
-      'The ball popped open with no gift this time — try again!',
+      'The ball popped open with no gift this time — press AGAIN within 10s to try!',
       false,
       true,
       prizeText
@@ -529,6 +529,24 @@ function showFinalPrizeCard(prizeText){
   lastPub='';
   publish();
 }
+function triggerTimeoutNoCatch(){
+  wonPrize='No Gift - Try Again';
+  resultSeq++;
+  state='over';
+  overCountdown=POST_GAME_WAIT;
+  sfx('nogift');
+  overlay(
+    true,
+    'Time’s Up!',
+    'You didn’t catch a ball — press AGAIN within 10s to try again!',
+    false,
+    true,
+    'No Gift - Try Again'
+  );
+  document.getElementById('ovCountdown').textContent='Returning to QR lobby in '+Math.ceil(overCountdown)+'s…';
+  lastPub='';
+  publish();
+}
 function celebrate(side,landedBall){
   glow[side]=1;
   var col=side==='a'?'#ff4f9a':'#3fa322',cx=side==='a'?WL/2:(WR+W)/2;
@@ -540,7 +558,6 @@ function celebrate(side,landedBall){
   var el=document.getElementById(side==='a'?'ca':'cb');
   if(el.animate&&!matchMedia('(prefers-reduced-motion:reduce)').matches)el.animate([{transform:'scale(1.6)'},{transform:'scale(1)'}],{duration:350});
   if(!twoPlayerMode && side==='a' && state==='play' && !popAnim && !pendingBasketBall){
-    /* Wait until the ball drops down into the basket before popping */
     pendingBasketBall={
       ball:landedBall||null,
       settledTimer:0,
@@ -560,7 +577,6 @@ function updatePendingBasketPop(dt){
 
   if(insideBasket || settled){
     pendingBasketBall.settledTimer+=dt;
-    /* Let the user see the ball drop down into the basket first */
     if(pendingBasketBall.settledTimer >= 0.45){
       var bx=b ? b.x : WL/2;
       var by=b ? b.y : RIM+45;
@@ -706,8 +722,7 @@ function reset(){
       vibAmt:0,
       swayAngle:0,
       swayVel:0,
-      rightTwist:0,
-      dropLiftTimer:0
+      rightTwist:0
     };
   });
   timeLeft=GAME_SECONDS;
@@ -739,8 +754,8 @@ function startGrabSequence(c){
   c.phase='windupDrop';
   c.pauseTimer=0.25;
   c.open=true;
-  c.vibAmt=0.32;
-  c.swayVel+=(Math.random()<0.5?-1:1)*0.035;
+  c.vibAmt=0.3;
+  c.swayVel+=(Math.random()<0.5?-1:1)*0.03;
   sfx('clunk');
 }
 function attemptPickAtCurrentPos(c){
@@ -759,20 +774,22 @@ function attemptPickAtCurrentPos(c){
       c.open=false;
       c.phase='windupLift';
       c.pauseTimer=0.22;
-      c.vibAmt=0.38;
-      c.swayVel+=(best.x>c.x?-1:1)*0.07;
+      c.vibAmt=0.35;
+      c.swayVel+=(best.x>c.x?-1:1)*0.06;
       sfx('slip');
       setTimeout(function(){if(!c.held)c.open=true},280);
       return;
     }
     c.held=best;
     best.held=true;
+    best.x=c.x;
+    best.y=c.y+28;
     c.gripOffset=offset;
     c.open=false;
     c.phase='windupLift';
     c.pauseTimer=0.26;
-    c.vibAmt=0.38;
-    c.swayVel+=(Math.random()<0.5?-1:1)*0.06;
+    c.vibAmt=0.32;
+    c.swayVel+=(Math.random()<0.5?-1:1)*0.04;
     sfx('grab');
   }else{
     sfx('miss');
@@ -790,8 +807,8 @@ function slipHeldBall(c){
   c.held=null;
   c.open=true;
   c.phase='idle';
-  c.vibAmt=0.38;
-  c.swayVel+=(Math.random()<0.5?-1:1)*0.08;
+  c.vibAmt=0.35;
+  c.swayVel+=(Math.random()<0.5?-1:1)*0.06;
   sfx('slip');
   fx.push({x:c.x,y:c.y+36,vx:(Math.random()-0.5)*1.2,vy:-1,life:52,c:'#ffe066',t:'SLIP!'});
 }
@@ -812,7 +829,7 @@ function overlay(show,title,msg,showQrs,showCountdown,prizeText){
     emojiEl.textContent=prizeEmoji(prizeText);
     emojiEl.classList.toggle('sad',isSad);
     headingEl.textContent=isSad?'No Gift - Try Again':'Congratulations!';
-    prizeEl.textContent=isSad?'Try again!':'You won: '+prizeText+'!';
+    prizeEl.textContent=isSad?'Press AGAIN within 10s to try!':'You won: '+prizeText+'!';
     banner.classList.toggle('sad-banner',isSad);
     banner.classList.remove('hide');
   }else{
@@ -923,30 +940,27 @@ function physics(){
   }
 }
 
-/* Slower grabber motion with pendulum swing & right-twist drop-off */
+/* Slower grabber motion with pendulum swing & straight normal basket drop-off */
 function move(dt){
   var activeClaws=twoPlayerMode?claws:[claws[0]];
   activeClaws.forEach(function(c){
     var isMoving=false;
     var topY=135;
     var maxDropY=FLOOR-42;
-    var targetTwist=0;
 
-    if(c.dropLiftTimer > 0){
-      c.dropLiftTimer=Math.max(0, c.dropLiftTimer - dt);
-    }
+    c.rightTwist=0;
 
     if(c.phase==='windupDrop'){
       isMoving=true;
       c.pauseTimer-=dt;
-      c.swayVel+=Math.sin(c.vibPhase*1.7)*0.01;
+      c.swayVel+=Math.sin(c.vibPhase*1.7)*0.008;
       if(c.pauseTimer<=0){
         c.phase='descending';
       }
     }else if(c.phase==='descending'){
       isMoving=true;
-      c.y+=1.05; // Slower descent
-      c.swayVel+=Math.sin(c.vibPhase*1.3)*0.007;
+      c.y+=1.05;
+      c.swayVel+=Math.sin(c.vibPhase*1.3)*0.006;
       var hitBall=false;
       balls.forEach(function(o){
         if(o.held||o.in)return;
@@ -962,19 +976,19 @@ function move(dt){
     }else if(c.phase==='windupLift'){
       isMoving=true;
       c.pauseTimer-=dt;
-      c.swayVel+=Math.cos(c.vibPhase*1.9)*0.012;
+      c.swayVel+=Math.cos(c.vibPhase*1.9)*0.009;
       if(c.pauseTimer<=0){
         c.phase='lifting';
       }
     }else if(c.phase==='lifting'){
       isMoving=true;
-      if(c.held && Math.random()<dt*(0.14 + (c.gripOffset/54)*0.3 + Math.abs(c.swayAngle)*0.28)){
+      if(c.held && Math.random()<dt*(0.12 + (c.gripOffset/54)*0.25 + Math.abs(c.swayAngle)*0.22)){
         slipHeldBall(c);
         return;
       }
       if(c.y > topY + 2){
-        c.y=Math.max(topY, c.y - 1.0); // Slower lift
-        c.swayVel+=Math.sin(c.vibPhase*1.2)*0.008;
+        c.y=Math.max(topY, c.y - 1.0);
+        c.swayVel+=Math.sin(c.vibPhase*1.2)*0.007;
       }else{
         c.y=topY;
         if(c.held){
@@ -987,37 +1001,34 @@ function move(dt){
     }else if(c.phase==='toBasket'){
       isMoving=true;
       c.y=topY;
-      if(c.held && Math.random()<dt*(0.15 + (c.gripOffset/54)*0.32 + Math.abs(c.swayAngle)*0.3)){
+      if(c.held && Math.random()<dt*(0.12 + (c.gripOffset/54)*0.25 + Math.abs(c.swayAngle)*0.22)){
         slipHeldBall(c);
         return;
       }
       var basketX=c.idx===0 ? WL/2 : (WR+W)/2;
       var diffX=basketX - c.x;
-      if(Math.abs(diffX) > 4){
-        var stepX=Math.sign(diffX)*Math.min(Math.abs(diffX), 1.05); // Slower carry to basket
+      if(Math.abs(diffX) > 3){
+        var stepX=Math.sign(diffX)*Math.min(Math.abs(diffX), 1.05);
         c.x+=stepX;
-        c.swayVel-=stepX*0.012;
-        targetTwist=0.26;
+        c.swayVel-=stepX*0.009;
       }else{
         c.x=basketX;
-        targetTwist=0.28;
-        c.dropLiftTimer=0.28;
         if(c.held){
-          c.held.x=Math.min(WL - R - 8, c.x + 4);
-          c.held.y=Math.max(RIM - R - 6, c.y + 24);
+          c.held.x=c.x;
+          c.held.y=c.y+28;
           c.held.held=false;
-          c.held.vy=1.0;
+          c.held.vy=1.1;
           c.held=null;
         }
         c.open=true;
         c.phase='idle';
-        c.vibAmt=0.3;
+        c.vibAmt=0.25;
         sfx('drop');
       }
     }else{
       c.y=topY;
       var dirX=Math.max(-1,Math.min(1,c.dx));
-      var targetVel=dirX*1.05; // Slower horizontal movement
+      var targetVel=dirX*1.05;
       var accel=dirX!==0 ? 7.5 : 10;
       c.velX+=(targetVel - c.velX)*Math.min(1, accel*dt);
       if(Math.abs(c.velX)<0.02 && dirX===0)c.velX=0;
@@ -1026,36 +1037,30 @@ function move(dt){
       if(c.x<50){c.x=50;c.velX=0}
       if(c.x>W-50){c.x=W-50;c.velX=0}
       if(isMoving){
-        c.swayVel-=c.velX*0.005;
-      }
-      if(c.dropLiftTimer > 0){
-        targetTwist=0.26 * (c.dropLiftTimer / 0.28);
+        c.swayVel-=c.velX*0.004;
       }
     }
 
-    c.rightTwist+=(targetTwist - c.rightTwist)*Math.min(1, 6*dt);
-
-    var targetVib=isMoving ? 0.3 : (c.held ? 0.18 : 0);
+    var targetVib=isMoving ? 0.25 : (c.held ? 0.14 : 0);
     if(targetVib > c.vibAmt){
       c.vibAmt=Math.min(targetVib, c.vibAmt+dt*6);
     }else{
       c.vibAmt=Math.max(targetVib, c.vibAmt-dt*4);
     }
-    c.vibPhase+=dt*60;
+    c.vibPhase+=dt*56;
 
-    c.swayVel+=-c.swayAngle*16*dt;
-    c.swayVel*=Math.pow(0.24,dt);
+    c.swayVel+=-c.swayAngle*18*dt;
+    c.swayVel*=Math.pow(0.22,dt);
     c.swayAngle+=c.swayVel*dt;
 
-    var liftOffsetY=(c.dropLiftTimer > 0) ? -Math.sin((c.dropLiftTimer/0.28)*Math.PI)*8 : 0;
-    var motorJitterX=Math.sin(c.vibPhase)*1.1 + Math.sin(c.vibPhase*2.37)*0.5;
-    var motorJitterY=Math.cos(c.vibPhase*1.85)*0.75 + Math.sin(c.vibPhase*3.1)*0.35;
-    var vibX=calm?0:motorJitterX*c.vibAmt + Math.sin(c.swayAngle)*16;
-    var vibY=calm?0:motorJitterY*c.vibAmt + liftOffsetY;
+    var motorJitterX=Math.sin(c.vibPhase)*0.9 + Math.sin(c.vibPhase*2.37)*0.4;
+    var motorJitterY=Math.cos(c.vibPhase*1.85)*0.65 + Math.sin(c.vibPhase*3.1)*0.3;
+    var vibX=calm?0:motorJitterX*c.vibAmt + Math.sin(c.swayAngle)*12;
+    var vibY=calm?0:motorJitterY*c.vibAmt;
 
     if(c.held){
       c.held.x=c.x+vibX;
-      c.held.y=c.y+26+vibY;
+      c.held.y=c.y+28+vibY;
       c.held.vy=0;
     }
   });
@@ -1220,14 +1225,14 @@ function rod(x1,y1,x2,y2,w){
 }
 function drawClaw(c,n){
   if(n===1 && !twoPlayerMode) return;
-  var liftOffsetY=(c.dropLiftTimer > 0) ? -Math.sin((c.dropLiftTimer/0.28)*Math.PI)*8 : 0;
-  var motorJitterX=Math.sin(c.vibPhase)*1.1 + Math.sin(c.vibPhase*2.37)*0.5;
-  var motorJitterY=Math.cos(c.vibPhase*1.85)*0.75 + Math.sin(c.vibPhase*3.1)*0.35;
-  var vibX=calm?0:motorJitterX*c.vibAmt + Math.sin(c.swayAngle)*16;
-  var vibY=calm?0:motorJitterY*c.vibAmt + liftOffsetY;
+  var motorJitterX=Math.sin(c.vibPhase)*0.9 + Math.sin(c.vibPhase*2.37)*0.4;
+  var motorJitterY=Math.cos(c.vibPhase*1.85)*0.65 + Math.sin(c.vibPhase*3.1)*0.3;
+  var vibX=calm?0:motorJitterX*c.vibAmt + Math.sin(c.swayAngle)*12;
+  var vibY=calm?0:motorJitterY*c.vibAmt;
 
   var anchorX=c.x, anchorY=c.y;
   var x=c.x+vibX, y=c.y+vibY, P=c.pal, i, op=c.open;
+  var holding=!!c.held;
 
   rrect(anchorX-24,RAIL-20,48,26,6);ctx.fillStyle=metal(anchorX-24,anchorX+24);ctx.fill();ctx.strokeStyle='#2b2f38';ctx.lineWidth=2;ctx.stroke();
   ctx.font='800 14px "Baloo 2",sans-serif';ctx.textAlign='center';ctx.fillStyle=P.lo;ctx.fillText('P'+(n+1),anchorX,RAIL-3);
@@ -1251,17 +1256,36 @@ function drawClaw(c,n){
 
   ctx.save();
   ctx.translate(x,y-25);
-  ctx.rotate(calm?0:(c.swayAngle*1.1 + c.rightTwist + Math.sin(c.vibPhase*1.15)*0.02*c.vibAmt));
+  ctx.rotate(calm?0:(c.swayAngle*1.05 + Math.sin(c.vibPhase*1.15)*0.015*c.vibAmt));
   ctx.translate(-x,-(y-25));
 
   var hg=ctx.createLinearGradient(x-12,0,x+12,0);hg.addColorStop(0,'#6a7280');hg.addColorStop(0.35,'#f2f4f8');hg.addColorStop(1,'#5a6270');
   rrect(x-11,y-31,22,12,5);ctx.fillStyle=hg;ctx.fill();ctx.strokeStyle='#2b2f38';ctx.lineWidth=1.5;ctx.stroke();
+
+  /* Realistic claw geometry: cradles around ball equator when holding, opens wide when open */
   [-1,1].forEach(function(s){
-    var sx=x+s*7,sy=y-22,ex=x+s*(op?38:24),ey=y+8,tx=x+s*(op?26:6),ty=y+38;
-    rod(sx,sy,ex,ey,3);rod(ex,ey,tx,ty,3);rod(x+s*5,y-17,x+s*(op?20:14),y-1,2);
-    node(sx,sy,4.2,P);node(ex,ey,4.6,P);node(tx,ty,3.4,P);node(x+s*(op?32:15),y+23,3,P);
+    var sx=x+s*8;
+    var sy=y-21;
+    var ex=op ? (x+s*40) : (holding ? (x+s*(R+6)) : (x+s*22));
+    var ey=op ? (y+6)  : (holding ? (y+26)      : (y+14));
+    var tx=op ? (x+s*26) : (holding ? (x+s*(R+3)) : (x+s*11));
+    var ty=op ? (y+38) : (holding ? (y+42)      : (y+36));
+    var ix=x+s*5;
+    var iy=y-16;
+    var jx=op ? (x+s*22) : (holding ? (x+s*(R+2)) : (x+s*14));
+    var jy=op ? (y-1)  : (holding ? (y+14)      : (y+8));
+
+    rod(sx,sy,ex,ey,3);
+    rod(ex,ey,tx,ty,3);
+    rod(ix,iy,jx,jy,2);
+    node(sx,sy,4.2,P);
+    node(ex,ey,4.6,P);
+    node(tx,ty,3.6,P);
+    node(jx,jy,2.8,P);
   });
-  rod(x,y-20,x,y+34,2.6);node(x,y-20,4.4,P);node(x,y+34,3.2,P);
+  rod(x,y-20,x,y+18,2.6);
+  node(x,y-20,4.4,P);
+  node(x,y+18,3.2,P);
   ctx.restore();
 }
 function draw(){
@@ -1375,17 +1399,22 @@ function loop(t){
       updatePendingBasketPop(dt);
     }
     if(timeLeft<=0){
-      timeLeft=0;state='over';overCountdown=POST_GAME_WAIT;
-      claws.forEach(function(c){if(c.held){c.held.held=false;c.held=null;c.open=true}c.phase='idle';c.velX=0;c.vibAmt=0;c.dropLiftTimer=0;c.rightTwist=0});
-      sfx('end');clap();
+      timeLeft=0;
+      claws.forEach(function(c){if(c.held){c.held.held=false;c.held=null;c.open=true}c.phase='idle';c.velX=0;c.vibAmt=0;c.rightTwist=0});
       var c=counts();
-      if(!twoPlayerMode){
-        overlay(true,'Time’s up!','You collected '+c[0]+' ball'+(c[0]===1?'':'s')+'!',false,true,'');
+      if(!twoPlayerMode && c[0]===0){
+        triggerTimeoutNoCatch();
       }else{
-        var msg=c[0]===c[1]?'It’s a tie!':(c[0]>c[1]?'Player 1 wins!':'Player 2 wins!');
-        overlay(true,'Time’s up!',msg+' ('+c[0]+' to '+c[1]+')',false,true,'');
+        state='over';overCountdown=POST_GAME_WAIT;
+        sfx('end');clap();
+        if(!twoPlayerMode){
+          overlay(true,'Time’s up!','You collected '+c[0]+' ball'+(c[0]===1?'':'s')+'!',false,true,'');
+        }else{
+          var msg=c[0]===c[1]?'It’s a tie!':(c[0]>c[1]?'Player 1 wins!':'Player 2 wins!');
+          overlay(true,'Time’s up!',msg+' ('+c[0]+' to '+c[1]+')',false,true,'');
+        }
+        document.getElementById('ovCountdown').textContent='Returning to QR lobby in '+Math.ceil(overCountdown)+'s…';
       }
-      document.getElementById('ovCountdown').textContent='Returning to QR lobby in '+Math.ceil(overCountdown)+'s…';
     }
   }else if(state==='over'){
     overCountdown-=dt;
@@ -1654,7 +1683,7 @@ function startCtl(n,targetRoom){
       popupEm.textContent=prizeEmoji(gp.prize);
       popupEm.classList.toggle('sad',isTryAgain);
       popupTitle.textContent=isTryAgain?'No Gift - Try Again':'Congratulations!';
-      popupSub.textContent=isTryAgain?'No gift this time — tap AGAIN to try!':gp.prize+' (Saved below for cashier!)';
+      popupSub.textContent=isTryAgain?'Press AGAIN within 10s to try again!':gp.prize+' (Saved below for cashier!)';
       popupEl.classList.toggle('sad-popup',isTryAgain);
       popupEl.classList.remove('hide');
       document.getElementById('cmsg').textContent='';
